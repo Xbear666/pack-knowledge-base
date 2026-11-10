@@ -1,0 +1,2276 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class=""><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pack设计规范-V1.5</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%233451b2'/%3E%3Cpath d='M17 33l10 11 20-24' fill='none' stroke='white' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #ffffff;
+  --bg-alt: #f6f6f7;
+  --bg-soft: #f6f6f7;
+  --bg-mute: #f1f1f2;
+  --divider: #e2e2e3;
+  --t1: rgba(60,60,67,1);
+  --t2: rgba(60,60,67,.72);
+  --t3: rgba(60,60,67,.48);
+  --brand: #3451b2;
+  --brand-2: #3a5ccc;
+  --brand-soft: rgba(100,108,255,.1);
+  --green: #18794e;
+  --green-soft: rgba(16,185,129,.12);
+  --yellow: #915930;
+  --yellow-soft: rgba(234,179,8,.12);
+  --red: #b8272c;
+  --red-soft: rgba(244,63,94,.12);
+  --shadow: 0 1px 2px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.06);
+  --nav-h: 60px;
+  --side-w: 280px;
+  --radius: 12px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scrollbar-gutter: stable; scroll-padding-top: calc(var(--nav-h) + 20px); }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: var(--bg); color: var(--t1); font-size: 14.5px; line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--brand); text-decoration: none; }
+a:hover { color: var(--brand-2); text-decoration: underline; text-underline-offset: 2px; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+input, textarea, select { font-family: inherit; font-size: 14px; }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
+
+/* ===== 顶部导航 ===== */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; height: var(--nav-h); z-index: 30;
+  background: var(--bg); border-bottom: 1px solid var(--divider);
+}
+.nav-in { height: 100%; display: flex; align-items: center; gap: 14px; padding: 0 20px; }
+.nav .menu-btn { display: none; width: 36px; height: 36px; border-radius: 8px; place-items: center; font-size: 18px; color: var(--t2); }
+.nav .menu-btn:hover { background: var(--bg-soft); }
+.nav .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 16px; white-space: nowrap; }
+.nav .brand .logo-img { display:block; width:132px; height:35px; object-fit:contain; flex:none; }
+.nav .search { flex: 1; max-width: 480px; margin: 0 auto; position: relative; }
+.nav .search input {
+  width: 100%; height: 38px; padding: 0 16px 0 38px;
+  border-radius: 9px; border: 1px solid transparent; background: var(--bg-alt);
+  color: var(--t1); outline: none; transition: all .2s;
+}
+.nav .search input:hover { border-color: var(--divider); }
+.nav .search input:focus { border-color: var(--brand); background: var(--bg); }
+.nav .search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; stroke: var(--t3); fill: none; stroke-width: 2; }
+.nav .nav-right { display: flex; align-items: center; gap: 6px; }
+.nav .admin-btn {
+  padding: 7px 14px; border: 1px solid var(--divider); border-radius: 7px;
+  font-size: 13px; color: var(--t2); white-space: nowrap; transition: all .15s;
+}
+.nav .admin-btn:hover { border-color: var(--brand); color: var(--brand); }
+
+/* ===== 侧边栏 ===== */
+.sidebar {
+  position: fixed; top: var(--nav-h); bottom: 0; left: 0; width: var(--side-w);
+  background: var(--bg-alt); padding: 24px 20px 80px; overflow-y: auto;
+  overscroll-behavior: contain; z-index: 26;
+  transition: transform .2s;
+}
+.sidebar .side-label {
+  font-size: 12px; font-weight: 600; color: var(--t3); text-transform: uppercase;
+  letter-spacing: .04em; padding: 0 12px 8px;
+}
+.chapter-block { margin-bottom: 4px; }
+.chapter-row {
+  display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 7px;
+  font-size: 14px; font-weight: 500; color: var(--t2); cursor: pointer;
+  transition: all .15s; width: 100%; text-align: left;
+}
+.chapter-row:hover { color: var(--t1); background: rgba(0,0,0,.03); }
+.chapter-row.active { color: var(--brand); background: var(--brand-soft); }
+.chapter-row .ch-num { flex: none; width: 1.5em; font-variant-numeric: tabular-nums; color: var(--t3); }
+.chapter-row.active .ch-num { color: var(--brand); }
+.chapter-row .ch-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chapter-row .ch-count { font-size: 12px; color: var(--t3); font-variant-numeric: tabular-nums; flex: none; }
+.chapter-row .fold-arrow {
+  flex: none; width: 20px; height: 20px; display: grid; place-items: center;
+  color: var(--t3); transition: transform .2s; font-size: 11px;
+}
+.chapter-block.open .fold-arrow { transform: rotate(90deg); }
+.sub-toc {
+  display: none; margin: 2px 0 8px 20px; padding-left: 10px;
+  border-left: 1px solid var(--divider);
+}
+.chapter-block.open .sub-toc { display: block; }
+.sub-toc a {
+  display: flex; gap: 6px; padding: 4px 0 4px 10px; margin-left: -1px;
+  border-left: 2px solid transparent; font-size: 13px; line-height: 1.5;
+  color: var(--t2); text-decoration: none; transition: all .15s;
+}
+.sub-toc a:hover { color: var(--t1); }
+.sub-toc a.on { color: var(--brand); border-left-color: var(--brand); }
+.sub-toc a .num { flex: none; min-width: 1.4em; color: var(--t3); font-size: 12px; font-variant-numeric: tabular-nums; }
+.sub-toc a.on .num { color: var(--brand); }
+.sub-toc a .label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 侧边栏底部：豆包助手卡片 */
+.side-ai {
+  margin: 24px 12px 0; padding: 16px; background: var(--bg);
+  border: 1px solid var(--divider); border-radius: var(--radius);
+}
+.side-ai h4 { font-size: 13px; font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.side-ai p { font-size: 12px; color: var(--t3); line-height: 1.6; margin-bottom: 10px; }
+.side-ai .btn-row { display: flex; gap: 6px; }
+.side-ai .mini-btn {
+  flex: 1; padding: 6px 8px; border: 1px solid var(--divider); border-radius: 6px;
+  font-size: 12px; color: var(--t2); text-align: center; transition: all .15s;
+}
+.side-ai .mini-btn:hover { border-color: var(--brand); color: var(--brand); }
+.side-ai .mini-btn.primary { background: var(--brand); color: #fff; border-color: var(--brand); }
+.side-ai .mini-btn.primary:hover { background: var(--brand-2); color: #fff; }
+
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 25; }
+
+/* ===== 主内容区 ===== */
+.content {
+  padding: calc(var(--nav-h) + 32px) 40px 120px;
+  margin-left: var(--side-w);
+}
+.doc { max-width: 820px; margin: 0 auto; }
+.doc-head { margin-bottom: 28px; }
+.doc-head h1 { font-size: 28px; line-height: 1.3; font-weight: 700; letter-spacing: -.01em; margin-bottom: 8px; }
+.doc-head .desc { color: var(--t2); font-size: 15px; max-width: 60ch; }
+.doc-head .stat { color: var(--t3); font-size: 13px; margin-top: 8px; }
+.doc-head .stat b { color: var(--brand); font-weight: 600; }
+
+.sec-block { margin-top: 36px; }
+.sec-h {
+  display: flex; align-items: baseline; gap: 10px; padding-top: 20px;
+  border-top: 1px solid var(--divider); margin-bottom: 6px;
+  scroll-margin-top: calc(var(--nav-h) + 16px);
+}
+.sec-h h2 { font-size: 21px; font-weight: 600; letter-spacing: -.01em; }
+.sec-h .shown { margin-left: auto; font-size: 12px; color: var(--t3); font-variant-numeric: tabular-nums; }
+
+.card {
+  background: var(--bg-soft); border: 1px solid transparent; border-radius: var(--radius);
+  padding: 20px 22px 16px; margin-bottom: 14px; scroll-margin-top: calc(var(--nav-h) + 16px);
+  transition: border-color .2s;
+}
+.card:hover { border-color: var(--divider); }
+.card .card-title {
+  font-size: 16px; font-weight: 600; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.badge {
+  font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500;
+}
+.badge.important { background: var(--red-soft); color: var(--red); }
+.badge.warning { background: var(--yellow-soft); color: var(--yellow); }
+.badge.normal { background: var(--bg-mute); color: var(--t3); }
+.card .card-body { font-size: 14.5px; line-height: 1.8; color: var(--t1); }
+.card .card-body p { margin-bottom: 8px; }
+.card .card-body p:last-child { margin-bottom: 0; }
+.card .card-body a { color: var(--brand); }
+.card .card-body ul, .card .card-body ol { padding-left: 20px; margin-bottom: 8px; }
+.card .card-body li { margin-bottom: 4px; }
+.card .card-tags { margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
+.tag {
+  font-size: 12px; padding: 2px 10px; background: var(--bg);
+  border-radius: 10px; color: var(--t3);
+}
+.empty-state { text-align: center; padding: 60px 20px; color: var(--t3); }
+.empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+
+/* ===== 后台管理视图 ===== */
+.admin-view { display: none; }
+.admin-view.active { display: block; }
+.reader-view.hidden { display: none; }
+
+.admin-wrap {
+  margin-top: var(--nav-h); padding: 24px; max-width: 1000px; margin-left: auto; margin-right: auto;
+}
+.admin-login-box {
+  max-width: 360px; margin: 60px auto; background: var(--bg);
+  border: 1px solid var(--divider); border-radius: var(--radius); padding: 28px;
+}
+.admin-login-box h2 { font-size: 18px; margin-bottom: 20px; text-align: center; }
+.admin-login-box .form-group { margin-bottom: 14px; }
+.admin-login-box label { display: block; font-size: 13px; color: var(--t2); margin-bottom: 4px; }
+.admin-login-box input {
+  width: 100%; height: 40px; padding: 0 12px; border: 1px solid var(--divider);
+  border-radius: 7px; outline: none; background: var(--bg);
+}
+.admin-login-box input:focus { border-color: var(--brand); }
+.admin-login-box .btn-primary {
+  width: 100%; height: 40px; background: var(--brand); color: #fff;
+  border: none; border-radius: 7px; font-size: 14px; margin-top: 6px;
+}
+.login-err { color: var(--red); font-size: 13px; margin-top: 8px; text-align: center; }
+
+.admin-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--divider);
+}
+.admin-head h2 { font-size: 19px; white-space: nowrap; }
+.admin-head .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.btn {
+  padding: 7px 14px; border-radius: 6px; border: 1px solid var(--divider);
+  background: var(--bg); font-size: 13px; color: var(--t2); transition: all .15s;
+}
+.btn:hover { background: var(--bg-soft); color: var(--t1); }
+.btn-primary { background: var(--brand); color: #fff; border-color: var(--brand); }
+.btn-primary:hover { background: var(--brand-2); color: #fff; }
+.btn-danger { color: var(--red); border-color: var(--red); }
+.btn-danger:hover { background: var(--red-soft); }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+
+.admin-grid { display: grid; grid-template-columns: 230px 1fr; gap: 20px; }
+.admin-side {
+  background: var(--bg-alt); border: 1px solid var(--divider); border-radius: var(--radius); padding: 10px;
+}
+.admin-side .side-t { font-size: 12px; color: var(--t3); font-weight: 600; padding: 6px 10px; }
+.admin-ch-row {
+  padding: 7px 10px; border-radius: 5px; cursor: pointer; font-size: 13.5px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.admin-ch-row:hover { background: rgba(0,0,0,.04); }
+.admin-ch-row.active { background: var(--brand-soft); color: var(--brand); }
+.admin-ch-row .del {
+  opacity: 0; background: none; color: var(--red); font-size: 14px; padding: 0 4px;
+}
+.admin-ch-row:hover .del { opacity: 1; }
+.admin-ch-row .ops { display: flex; gap: 2px; align-items: center; }
+.admin-ch-row .rename {
+  opacity: 0; background: none; color: var(--t2); font-size: 12px; padding: 0 6px; border: none; cursor: pointer;
+}
+.admin-ch-row:hover .rename { opacity: 1; }
+
+.admin-main {
+  background: var(--bg); border: 1px solid var(--divider); border-radius: var(--radius); padding: 20px;
+}
+.admin-main .main-head {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;
+}
+.admin-main .main-head h3 { font-size: 15px; }
+
+.admin-item-row {
+  padding: 10px 12px; border: 1px solid var(--divider); border-radius: 7px; margin-bottom: 8px;
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
+}
+.admin-item-row .info { flex: 1; min-width: 0; }
+.admin-item-row .info .t { font-weight: 500; font-size: 14px; margin-bottom: 2px; }
+.admin-item-row .info .p { font-size: 12px; color: var(--t3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-item-row .ops { display: flex; gap: 4px; flex: none; }
+
+/* 模态框 */
+.modal-mask {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 100;
+  align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto;
+}
+.modal-mask.active { display: flex; }
+.modal-box {
+  background: var(--bg); border-radius: var(--radius); padding: 22px;
+  width: 100%; max-width: 560px;
+}
+.modal-box h3 { font-size: 16px; margin-bottom: 18px; }
+.f-group { margin-bottom: 14px; }
+.f-group label { display: block; font-size: 13px; color: var(--t2); margin-bottom: 4px; }
+.f-group input, .f-group textarea, .f-group select {
+  width: 100%; padding: 8px 12px; border: 1px solid var(--divider);
+  border-radius: 6px; outline: none; background: var(--bg);
+}
+.f-group textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
+.f-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.modal-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+
+.toast {
+  position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+  background: var(--t1); color: #fff; padding: 9px 18px; border-radius: 7px;
+  font-size: 13px; z-index: 200; opacity: 0; transition: opacity .2s; pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
+/* 移动端 */
+@media (max-width: 768px) {
+  .nav .menu-btn { display: grid; }
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .overlay.show { display: block; }
+  .content { margin-left: 0; padding: calc(var(--nav-h) + 20px) 16px 80px; }
+  .admin-grid { grid-template-columns: 1fr; }
+  .nav .brand span { display: none; }
+  .nav .brand .logo-img { width:92px; height:25px; }
+}
+
+/* ===== 离线知识库增强：暗色主题、筛选、搜索高亮、更新和收藏 ===== */
+html.dark {
+  --bg:#1b1b1f; --bg-alt:#161618; --bg-soft:#202127; --bg-mute:#2b2b2f;
+  --divider:#2e2e32; --t1:rgba(255,255,245,.88); --t2:rgba(235,235,245,.66);
+  --t3:rgba(235,235,245,.42); --brand:#a8b1ff; --brand-2:#c0c7ff;
+  --brand-soft:rgba(100,108,255,.18); --green:#3dd68c; --green-soft:rgba(16,185,129,.16);
+  --yellow:#f9b44e; --yellow-soft:rgba(234,179,8,.16); --red:#ff7a86;
+  --red-soft:rgba(244,63,94,.16); color-scheme:dark;
+}
+html { color-scheme:light; }
+html.dark body { background:var(--bg); color:var(--t1); }
+html.dark .nav, html.dark .admin-login-box, html.dark .admin-main,
+html.dark .modal-box, html.dark .side-ai { background:var(--bg); }
+html.dark .sidebar, html.dark .admin-side { background:var(--bg-alt); }
+html.dark .nav .search input, html.dark .admin-login-box input,
+html.dark .f-group input, html.dark .f-group textarea, html.dark .f-group select,
+html.dark .admin-main .admin-item-row { background:var(--bg-soft); color:var(--t1); }
+html.dark .chapter-row:hover, html.dark .admin-ch-row:hover { background:rgba(255,255,255,.055); }
+html.dark .tag { background:var(--bg-mute); }
+html.dark .btn, html.dark .nav .admin-btn, html.dark .reset,
+html.dark .chip, html.dark .kb-filter-actions button { background:var(--bg-soft); }
+html.dark .btn-primary, html.dark .side-ai .mini-btn.primary { background:var(--brand-2); color:#1b1b1f; border-color:var(--brand-2); }
+html.dark .btn-primary:hover, html.dark .side-ai .mini-btn.primary:hover { background:var(--brand); color:#1b1b1f; }
+html.dark .card.highlight-target { outline-color:var(--brand); }
+html.dark .kb-hit { background:rgba(234,179,8,.30); color:inherit; }
+.nav .theme-btn { width:34px; height:34px; display:grid; place-items:center; border:1px solid var(--divider); border-radius:8px; color:var(--t2); font-size:17px; }
+.nav .theme-btn:hover { color:var(--brand); border-color:var(--brand); background:var(--bg-soft); }
+.kb-filter-panel { margin:22px 0 0; padding:18px 12px 14px; border-top:1px solid var(--divider); }
+.kb-filter-title { color:var(--t2); font-size:12px; font-weight:700; margin:0 0 8px; display:flex; align-items:center; justify-content:space-between; gap:6px; }
+.kb-filter-title small { color:var(--t3); font-size:11px; font-weight:400; }
+.kb-filter-group { margin-bottom:16px; }
+.kb-filter-panel .chips { padding-top:0; }
+.kb-filter-panel .chip { padding:3px 9px; }
+.kb-filter-panel .chip[aria-pressed="true"] { background:var(--brand-soft); border-color:var(--brand); color:var(--brand); }
+.kb-filter-panel .reset { margin-top:2px; }
+.kb-filter-summary { margin-top:10px; color:var(--t3); font-size:12px; overflow-wrap:anywhere; }
+.kb-filter-hint { margin-top:8px; font-size:11px; color:var(--t3); line-height:1.55; }
+.chapter-row.all { margin-bottom:8px; border-bottom:1px solid var(--divider); border-radius:7px 7px 0 0; padding-bottom:10px; }
+.chapter-row .ch-title { white-space:normal; text-overflow:clip; line-height:1.5; }
+.sub-toc a .label { white-space:normal; text-overflow:clip; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.card .card-title { gap:10px; }
+.kb-card-heading { display:flex; align-items:flex-start; gap:10px; width:100%; }
+.kb-card-heading .kb-title-text { flex:1; min-width:0; overflow-wrap:anywhere; }
+.kb-fav { flex:none; border:1px solid var(--divider); border-radius:7px; padding:1px 8px; min-width:34px; height:28px; font-size:18px; color:var(--t3); line-height:1; }
+.kb-anchor { flex:none; color:var(--t3); border:1px solid var(--divider); border-radius:7px; width:28px; height:28px; display:grid; place-items:center; font-size:15px; text-decoration:none; opacity:.55; }
+.kb-anchor:hover { opacity:1; color:var(--brand); border-color:var(--brand); text-decoration:none; }
+.kb-fav:hover, .kb-fav.active { color:#c58b18; border-color:#d5a33a; background:rgba(234,179,8,.10); }
+.kb-card-meta { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:-1px 0 10px; color:var(--t3); font-size:12px; }
+.kb-card-meta .kb-date { padding:2px 7px; border-radius:5px; background:var(--bg-mute); }
+.kb-hit { background:rgba(255,205,66,.55); color:inherit; padding:0 1px; border-radius:2px; }
+.kb-tags { margin-top:12px; display:flex; flex-wrap:wrap; gap:6px; }
+.kb-tags .tag { border:0; cursor:pointer; font:inherit; font-size:12px; padding:2px 10px; border-radius:10px; }
+.kb-tags .tag:hover { color:var(--brand); box-shadow:inset 0 0 0 1px var(--brand); }
+.kb-tags .tag.active, .kb-tags .tag[aria-pressed="true"] { background:var(--brand-soft); color:var(--brand); box-shadow:inset 0 0 0 1px var(--brand); }
+.kb-attachment-preview { display:block; max-width:min(100%,720px); max-height:560px; width:auto; height:auto; object-fit:contain; margin:12px auto; border:1px solid var(--divider); border-radius:8px; background:#fff; }
+.kb-import-note { color:var(--t2); font-size:13px; padding:10px 12px; border-left:3px solid var(--brand); background:var(--brand-soft); border-radius:0 6px 6px 0; }
+.kb-att-link { display:inline-block; margin:3px 0; padding:3px 9px; border:1px solid var(--divider); border-radius:6px; }
+.kb-import-extracted { white-space:normal; overflow-wrap:anywhere; }
+.kb-import-extracted pre { white-space:pre-wrap; overflow-wrap:anywhere; font:13px/1.65 ui-monospace,Consolas,monospace; padding:12px; border-radius:8px; background:var(--bg-mute); max-height:none; }
+#kbPrintExport { display:none; }
+@media print { body > *:not(#kbPrintExport) { display:none!important; } #kbPrintExport { display:block!important; color:#222!important; background:#fff!important; font-family:Arial,"Microsoft YaHei",sans-serif; font-size:11pt; line-height:1.65; padding:0; } #kbPrintExport h1 { font-size:22pt; margin:0 0 8pt; } #kbPrintExport h2 { font-size:16pt; border-bottom:1px solid #bbb; margin:22pt 0 8pt; padding-bottom:4pt; page-break-after:avoid; } #kbPrintExport h3 { font-size:12pt; margin:12pt 0 4pt; page-break-after:avoid; } #kbPrintExport article { page-break-inside:avoid; border:1px solid #ddd; border-radius:6px; padding:10pt; margin:0 0 10pt; } #kbPrintExport img { max-width:100%; max-height:500px; } #kbPrintExport a { color:#23408f; text-decoration:underline; } }
+.card.highlight-target { outline:2px solid var(--brand); outline-offset:3px; animation:kb-flash 1.5s ease-out; }
+@keyframes kb-flash { 0%,30% { background:var(--brand-soft); } 100% { background:var(--bg-soft); } }
+.kb-empty-action { display:inline-flex; margin-top:14px; border:1px solid var(--divider); border-radius:7px; padding:6px 13px; color:var(--brand); }
+.kb-stat-pill { display:inline-block; margin-left:5px; padding:1px 7px; border-radius:6px; background:var(--brand-soft); color:var(--brand); font-size:12px; }
+@media (max-width:768px) {
+  .nav .nav-right { gap:4px; }
+  .nav .theme-btn { width:32px; height:32px; }
+  .kb-filter-panel { padding-left:12px; padding-right:12px; }
+  .kb-card-heading .kb-title-text { font-size:16px; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ===== 顶部导航 ===== -->
+<header class="nav">
+  <div class="nav-in">
+    <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+    <div class="brand">
+      <img class="logo-img" alt="赣锋锂电 GanFeng LiEnergy" src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAICAgICAQICAgIDAgIDAwYEAwMDAwcFBQQGCAcJCAgHCAgJCg0LCQoMCggICw8LDA0ODg8OCQsQERAOEQ0ODg7/2wBDAQIDAwMDAwcEBAcOCQgJDg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg7/wgARCACpAoADASIAAhEBAxEB/8QAHQABAAICAwEBAAAAAAAAAAAAAAcIBAYBAwUCCf/EABwBAQACAwEBAQAAAAAAAAAAAAAEBQECAwYHCP/aAAwDAQACEAMQAAABv8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABxzoRu/wB0+2Us70wTFBdH7qvYU97sp7KhN3VWXXi4HNS54N55rF6ZYf4qh5pcHsqZ7hZxGXiEyfNWfJLhIW2o38AAAAAAAAAAAAAAAAAAAAAAAAAAHECTxUIyPb1X0DJ0bYvJPfkbU9wIilaIJuIl1jadUNjmrSZCK4TjBFliu+DJcUG67H9SgVqkiMJKIn3eMpgMf19LmcmoAAAAAAAAAAAAAAAAAAAAAAAAAAHhVntp4ZT+XZfwCuffZbLIU3HbfQKzSFvG2FPOu0uYRBKGzdRTuU5E7CtGk3DFf7F422HheJIuOUFmKVOkiXmWdsNmAAA+PuHuU3Yo9iuOaX6ZZlU7jhc2y2WlM4dqu4P1hr75JmMNlmOr6a/bDNsxh/RkxZuv5n1nt7nSDVKzekiUmJxbeAzGH9GU4x2uSwzbMYeQx2OvHMxhmczx86G8RuyV/wA5f0O0rPfOOtzoGNqGfzq9k1ON4t0g2aVna8bfSVWOzXa7+2M2mZLG+8u5x0GQxBlsbIOWPyd7F7jsdPWZTE5Mp0/JkOrtZOr5Y7wyABxUG3n561XvPF/RKl00xruYn55Y2df0W+/zXvlJo6e69aXzKz3FbcC21W49zOf38V4kU/32z1OON6H+pNtdot9dT8/rd1q61867/mwLKodMyZDsNHuKY91gas8LW/lKLC1xl+f4Xi6d41GbXVFtZwttKhrx7d6d6wY976ZZ03Dd/B1a0+QL91Ft9aeC5870dD6WtRLLUzuJw81XifaXbxrFv5k0UtX29DIVTbQfnVrF9zssFIukOmezbZoOIltqezTDW0r44tfrzNa7k0YuiVoxNNuNrGq9Znb9L3sq/wDjYVydK6omNbilbS20MTdUvMm4syx/vXf0FZcGNZj40VlhI9OAB5H5k/o/+W/nfsl4LB/njtG0a68PQTuvWHWi4kfY0H1cLz1X6a49tItUJUhhi5VNLk1M6wv0HkTxvU9P8Kp5oOHKPmvtul+tEVpSw35t/oN+Y8mltXq3Rs/Kfqm5dEyda+uWTG9mI9zZXTd0gz0Px2ht1KgWx839rqL+lf5j2Z25W7/NW19KutdcSt1pqh2nwe5M8UC9mVV3lgjUvI27xNZCL/R51kLXzoBKOOdxPapJKPW5lOh1rq9c628+xY/Ej01NfQjmwcfy8WevFvs44Sf5fXzmV6m97HEe8uGv0EpReRn6qzaOj+e/F3/zvlrSvnKjU+xbjjY+rFga2NP0SVT87paxldSkH6J6Q/eEj0wAHnVmtVxGuKiLdo9xUT1bTM661H8zJVHUNbtEvqie3aBnSJ9Hsjx1gfOPlpVFWOTZO5i3tV5+2nnOnkVptbxnWoq3SPb1FnGSXWDVad9y524oqlXjtXVykjfqK13sN2Qsqvoc1V06JQ4WNr4rs53et/M9XFoyNDOFObPaK/NmZnauixbHKum+Sfw3ifyZvZzx53pNpVcJi21rGhDw7Fsc66fViTGoapLTPeNpJM9PmIJJpNpXzBmV/wCOVRsG0QRcJpukW6fHeZU6RP4et6wNlv3VG2vW6+h1uQAAAAAAAAAAAAAAAAOqJ5dcpkMpmc50Nb7tDePxydq0AAAAAAAAAAADF0KR2OUapKY5x5vGWz10PBko5xr9SQw8r1TPcM5AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/8QALxAAAQQCAQMDAwQCAgMAAAAABQIDBAYAARMUFRYHERIQF1AgISQxQEEjJTBwgP/aAAgBAQABBQL/AOdNuITmlJ3nvrWuVve/kn6bWhO/fW9b3rWacb3nvr6bUlOaUlWtuI1nK1nK1mloV9dqSnSVoV+aNy5UWA7MLF4ocoVU4VLTulhTn2noxUtLm7laiiSBiTONwDvFFN2lTmhizTTbloLtyREqW6OsRtx+aLMOx4EidKInSaZw9LMWe4Gqs2U4bIWWEPmeYj8PWhmTDrx5qHrzEfrQw9EJu/lv9H+BRVECK20NHR1OE40jTrbGtujRr+p50fKWEGkHmnX5HENk/N6IwzNU3BRKhO88mbXo8t6AWjuOLHwonUlibCu6OwdsAKcwpDJOQh65tzxemDsmM++IlQGhhIgO3Ao7Hvv8srfs2d/5rutTHTBvmwOVKlPqQhzbgRTsucbcmR4YNqS+UJxlPC5DDkeILS+6/EhOvTSDb8aAluRLtSU7SC6GM1v48ti6JlxqPGbg1aEnaTu5MDSJbjTpqI9DTDM7Zfi09LbYX8tPU5qIVjOpaDwHX25DbTIBpakQIq3YkWrx20u2lStVarTdR3SDEyS+ZiPx4YUZIXDhD5TU+epTdcDzNsWQqZYWl6TB2zE4kzkSoGljOKSD7PB3ueKhNjk8bNlQWFabklRqotOXJWb/AC8yCzMjQhzEJiSHjSXmR0dhLkRlxEccxGckRm5MdkNEZe+OvacMYnIiQmojHtrHG0us9jhaddCxHV9gg52CDnYYXuwwiOxjraXWnKwPce8VHZ4qOyALjwEfr3vWtFDjA1nz0ZnnozPPRmeejMGWuESn6/dP/iJ2oeOf89GYJOxyv+BNmNwoSbjAW9FkJlRPoTPRRrg2xRSUglYIo57zUdnmo7PNR2DbFFJSfwFtJqHhw5NsyNm1AomZ4mbzxM3niZvKZXp0I7ytpznaznaznaxK0qze9a1ztZztZztZp1veyMjpQ5iUubZA1G7kHAAEBY3M3rOdrOdrNPN73m3UJznaznaznazStK1tWk5ztZztZztZp5ve7nJ4gw1O3DA1rhFfQ1W0E5YGttinrQLIzTnjRbPGS+eMl8p4aZDI++ta5UZyt5yt5pad/TbiNZzN5zN5yt/TbqNZyI9uZvNK0rW1p1nM3nM3nM3mlpVm3Ea3paVfTa0pzTiFb/X6jS/41SaW7YE7bah9XEzq4mdXEx11PQEyx7u/drFnd7Fi7AbbVRzM6ZPutkkRJmrAbXnfD2KPnE6H2Qt3I5M39uNOfzQ111FgnrO4zX/ITTz3d7FijR9CYNkL7JTi6odSlWcs7O74d9u+Hc3YzKVUctLmi7daJbZPR84vO+HsVYTSN1EqUm2m9yfd2sR+Y2jXs3kp3hhEzxHvQSRI3TZ9kn90qs52SO5Wc18FZv2Si02OS0X0dMLzvJrFHS6cEWElsoXKbgVt2wlXpfdDmbKnNaaPldSRMx10AUPEUlu/ltx0mDW3A859qpz7IRcn95M7zvBnO/FflVJMt8OaPT9GKq9Kfg5bzEmNMp0+fLOfqVv2TeZXLZvT+J8jVvlTGR3XWD3cJHW0Mnii5YVW26tLmV5uV3GuZGcAy92tthqy0GNpAmxSFSbHTa5FlQfFBOXIMPgBQEbqbLdJPTV8IO7iWao0Vld0XpBSmi4rzXT17WWTQVoOHa5j12e46nW4CZ9haqYrgk1cS3ANNtIO0tvUWkFHNv2StViC8EVVROm7dGixTvp9F91WiV1B2jxfnM+lie4q2lPUnV76D0+XvapMOaVix9FznvX3JLo2cv4Cp7m5BmuV2I6I8aGZbRsOE1Vo2nzt0mfAfWoiJVi6YI3hJsNoUyjThp5WoNNe/kGRNcgLB6rQzW7QluDWRUbrD0atDujIgBrAd7SVFhWuioz++c3XmNNBHFfBi1yOeyUSL7Qf1TnOISdf6m00CMlIV1hl7O3w8t7LEcIMZ28etkvcCli4jxUwmhv7RBrqg0Ms/uZYgn/V+nchXOerLGmqvv8Ar1An63ujMclkvsnkJenURLs+UvjgWWR1VoBjH3qOuoGduLpZZeq9T5EItfpW+7UKJ8yGv6Ov8ABxSpBp/XavTGKnqbGFa4q7LX8B9if6mx1BrUKmknOQ7S2NNj/knPfWXSV8BgJvltNye6YCPZ5ykMZE1A7bCxtDbabHM1FBsJ28WFtcQjf9XKZykKTG/m3V35WCnQduxZVZIvT91MirQ+oSWSNrc4KwCZ1JtcZvTULLxM/ans/M6j9mrNJ0wBho28bPK1CpQprqbFAb4hhFzSA05znNVSPwV39R1XxqTzm1yxdqkDR/nkzPPJuQbAg5GEV5cW5eoL++vEFFDJ/3Cle0y8ypUKHrcgzY96h+nIWP1lnHs8AdzfsxdX+W0USJpA2ySNv2H0+g7YgGnOMJJd3sqLuioUD7gqz7gKwIbWTHWuVqXaKBF+ArLtL0wDDsblWG6ucVLgSulJsX9bcZNjXPr6/d82/rofTh1XykwrHJhxPL5mV8/Knl7tJ95NLi8xK8S+SVFkKjSE22YlHl8zK2blEJl5f+IeuR+psTOvjFeV8I1ic5bHVGOOsnXlPGQ1hdFRfOJGebyMr5N4jFvEn+TT4qnbBr9kq/Zu5ObVYRJdYx1m7SnHrVPW+CrMbcg9dXdoGQJm4RBN4kpbl3GTJhxE7fMD2uIZ+qWxqSPk+nrTsj7cIz7cIz7cIyJQullQ4CWGLBV2zDv24Rn24Rn24RkCgtxZxyv90gCKOgcZ1r2S8jkjkKLqaSFAdDQsn0/TIniR6RwmZG1KhyPTxt2T9uEZ9uEZ9uEYJBJG1970/S9NDi0jIGWEB3lkPSGxxQ2FbKjd+nLfy+3SPc1CQCqoNjqrHNEdwAeBJzwFGeAowNWEDJBaqdxlAa+kRhOroIEPB2c8HZzwdnA9fbGLN1/uuwtUQMJ/6lM7fhPUnTs4cNTCFTqixKl+Ds54Ozng7PuLGJHwS1cQSlhgLYtOb/AKK1yOQmeFxsYqEZmVaXk89Ej+5EwIZJMeFxs8LjZYArA1usRuoPta+Mf8I6r4xzluINmfMS+eYl8nnJxFFGHOOnka+LX+TOc20MmWEr13kRjPIjGOqkzJVRg7igbGcIMnfIjGeRGMlTps3dJHOJm6/r8ItOltu0kA8/4HXM8DrmeCV3W4AiENb/AMp1pDzKqqHUrxMNniYbG6wIacQyhuPIrguS/wCJhs8TDZqqBtbjQ2IjP/vX/8QAOBEAAQQBAgMEBwYGAwAAAAAAAQACAwQFERIGExQhMUFREBUiMlJTYRYgI0KBoSQwQENQcHGRsf/aAAgBAwEBPwH/AGTUrPt2Gwt7yqeDxbHmC8drx+69QcN/N/cLIYfAV6b5IpNXAdnaFsd5LY/yWhWx/ktrvJcOYWPKyOMvutWXq4GtG5ldxMgWx3ktjvJAE9y2P8kWkd6DXHuWx/kp3GKMuVKxJPru9G6zz9NPZUtq02Qho7F1d34VWfI+Lc9aha+jUejX06j7/CVfnZUO+HtXEbPWGabWadEODyf7wWVwD8S1r3O3a+ChyTBEB0ev6LHW6t2zyHVg0/8AAVahUtcRyENG1ngruew9Ow6Ewg6fQKrNjb+OdZEQA7fALhtkdXGyTu7iSVXiw2Uybenb9Sr+UoU7BgZX3afRU5Kd6k+Z0Abp9Fw/Upw4+S5KzXvQ4mw5dt5H7BcQxVDiA9kYBdp4KX1bgsbGZYwf0WKymMyljlRwAfoFx5LE23yoxposczbDqpDtYSqj3F73kqCy5su53aoLQmdposjK5jA1qZUsPbu3LSaOwGblbke+cRtKNaRo99UXP9okqFs9h52uTIZa4L3O1UMc9nVwcrEc1fQFysPeyBjde1QAtiGqY98l7v7PucDQ6iWX9FkuG8pavvnZ4qLCZTHytsTdrW96tTRZTNV2MOrW9qyzM0ZwKWm1YipegdJZu+8sC4cuzdd4k/srUnOtOd5lENo8L6D8w/8AVkf4DhcR+JC4Jr6mSZPjz8NmQxMGjishb4ghqETNAaVePQcMNb4kLGwmxejZ9VnTzLtWoO7VcUY27fDGQDUBcJ4+SpLK6XvC4qs9Tk3u+qhvQxxhqmstkrFzVH+HSc7zVSeGEHeo7kL37WhXjzLIYgNrVF+JcLvJCRnVlzkTSJ704RQ1S5nisY3SMuWQdtgVKzDFHtKtu51kNCtuHUAHwRvQBmgWOG6Rz/uUspcx+vTu01X2nzHzE7iXLvbtMihvWa8/OY72l9p8x8xP4ky8jS0yKLMX4axrsd7JQJB1U2Yv2IRC93shW8tduxCKZ2oCpZS7jwRA7TVfafMfMVrN5G6zZM/UK3l712IRTO1AVazLUlEsR0IVAZbO3ea1/tM8V0PFHzwmxS4rEyvsO1eVPXinkL3BdDX8l00WzZp2Lp4tmzTsXR1/JNrQsOoC6eIv36dqI1CZXijdq0I1ICddF0dfyRhjczae5MY2NujVbliYNHjVc+oPyKt+Na3qaxWMh3NUstZzNGN7VjmbYdf6OC3Zq68l5br5L1vlPnO/7U2QvWG7ZZCR9T/OdGx/vBciH4U1jGdwXJiP5VyIfhQAHd/i/wD/xAAvEQACAgIBAgMHAgcAAAAAAAABAgADBBESITEQExQFIiMyQVFSIEAVMDNQYnBx/9oACAECAQE/Af8AZLuK15GWZNxHKvqJ6rM/GVZGU1gBE2JseGxNiZmSaAOPeUPlOduOk2JseGx4bmxCekUk+HvbhZtzk0XqP2Ge3GiYZ8rGLz+If4yjKF+wBGpPL+pLa3rTkH3HtdMQde8rxcixOXKOt1VwTlMwl7gojNkU0nmZVRbYnIvLBZVYF5bmW9jWitTPRZGvmmI1nn6J7RfOyrjoy+i6heRaYnLyNn6xO3gsDdYG3HM4tOoOoxO9TifvEg200RAC0IIh7Qdp3f8AR7TbsspzKEqCmNk02rwXvEVqMdiZQcfj8TvL3rbSV9pld0riDigE625v/JT8XN3PaTdlgOKyDkZVXiNZ7veVfFzdy5uNZMxulbvMK6urZaZ9osChYg41AQOAIW2sHRYpAgYR+reA6tN+9PdnQLK+0ftFYARurRu85iJ3/RZRXb8wnosf7QYdA+kapGXiZ6LH+0GHQD2hx6mfkR18Fx6lbkBEorrbaiWUV2/MJ6LH+0rxqqztREx6q22ojorjRlvkYteiOhnm4X4wst96hR0nETgJxE0JxE4icR4AATiJxE0J2jEfWbWL1aEruErE7fs2rR/mG56en8RFqrXsP5+h4aE0P7Z//8QAPRAAAgECAwQHBgQFAwUAAAAAAQIAAxEEEiETMTJBECIzNFFhkRRSYnFyoSNCUIEgMECSoiRDwQU1cICC/9oACAEBAAY/Av8A106zgfMzQgzUzSop/ecQ6NXA+Zmms1Npo4P7zf0dZgPnNCDNXA/edovrO0X1nVYH5Hp6zAfOdVw3yP60XwwDN5x24Qpt1WgoBQypoSTGpUQLgdaNVaq2e2ovFXDqGT5wVcQbWXWDZMdkjcoEc6Lzmywh3za0+uPiabLZrmhrY1QgtcT2bCtwtrabJjc+cFKi5184t6jXI96e1bRrZb8crUnN0VfGbGq9nnGfSZMPUINoTiKrkkc5x/aZaD5j+sMlTGmkbcEIT/qDKDGbD41mYHW0Kre3Mw0s/Xgy1GVfKfhVHc5d0OGXAJVqDQ3imrgkpMwmSng1+oQ06VR83gDM1fC7Y3/PK6rS2RydXLGpVcKK9Xd1ozV8AtHq7477Y0esd0pUPaWq38YSMa/BwytiW5098LPZltFBoUr28Imwpqv0ymKtKmzW5iEJQpg+QntHK5/VyY5J/Dy751GDGY2twWMcgsyxqqIb8zAgq5TMylsgGsrVkBPWlEVHyMPGEri5nGIyaxA+Lzjwiezg6DUiVDqXBgXEts/NozU8aqxVavoG4oEbHKR4R1o9bqHUR6uJw+0Xzn/bxF2dGy5t0QNgAxirQweyObeJs7jPfd+rnZ7zGrVFN/lGfIbZpVoAZXcQ0KVB85Fr2j06tB2Yra9ptMtql5XCi5jUjRbM532h16nKDN4zONNYjXtKx3uElWrVpMc/lNhVoO4hy4RwYzVcOzLm0g/0bynZMqHkZ2UdhR1jNUpE0w+6D/SNGFPCsGtMxvstf1jZ1F6sKU10gdwbyyrLFR6TNTFjDTqC6mB0XUTdAtVdLzJTGk3Qo24zNl1l2XWcE4JwQU04R0FG3QuUNzOEzhMtRW38jWbSq1knbfadtO2+07b7QUKNTM0v/L2dSrZ+c7afgtm/oHrVDZVECipqYtVdx6VWq9iYyUXzETJVexnaztZ2sNOi+Yj9BDIbE6Q4DFkFtTmMbYYd6lMnQzubzubzubxa+KotTFuctmnFOKcU0M1nFOKcU0MrV/dErtmuC2kpYpsQyZuUC58/mZxTinFNG6NTOKcU4ppNZxTinFLBo1O/EsoL4tKadOdsSy6ypUWqatxzjtRoMyTurzurzuryo+JommMvOazinFOKaHo1M4pxTi6N83zimhvNTOKcU4poZqZoejUywP8AIp0QdQ8ULKe0NrLO1X1nar6ztVjvSN9OUrCnVqhQ5tO2qztqss+LqAxaeIqtUXziUMLVKXGtp1cVUM7zUnWxVQRAcW7CMznrNRgqHXWUcGuHOhmenelUhyYqoZ21WXavVAlIHFuQXEGJfitKmzxTgZtBO81J3mpNcY8JxNQ1OtvM2OErGnbQ2mmKqGd5qTrYtxKK1cSz0+YmGpg8tZTNtzQDoap4SuKWJYLm0ntNaoWbZ3vGFPEMFmfE1cxvznEJprCfCPQwtUqPKdXEOZ29Sa4lxEV67OCd09o/NG2eIffoJ2tSXNapEBxTb5tapN7c5VWniWADQBar/OD8epNviXJfzjiliGUXneHnbvLe1NPaMRVL798ZaOIZVBhfEVC/z6Go0KppkHlF29cvTtuP8d5WpX0DQVSNMsZcLmzW5Cf7n9suxcD6ZTTb72gOMYfvCGphjfkZ2H3jLTw+sqJQWyxsSRqLytc3s5EepiqWa40nd5noUsrXlNLTD4UHfSlOla65tYKuQaaw4ZeECe04oDKrc5ayf3Q7ALnI5GUgBfriCjf8olJKi5kJ1i3oayq+w3LHSiLJKtVtDmmI5/iGUqtejmLLCfZ41LDrlE9otwtHW/A0qORu6a5vAvvNEp7jsyITzvMtAOF+mfn/ALYrYg9YiV2+Awk63aZ69K7TsZT2KZTNRe09j+UpCqLpfWZSFuPilXZ5c2XTrRAu7PMw00j87tMO9Sj1iusvsZs6PVF4KZFwTEzUdbSvUFHULLJuzS50j/XKX0xm8BKsFcjW/wDHXqeCyvU33MSvznXsZwL6Q7NBqPCUQB/uCClTOV7CLSzElj4wa/5TE139zxhbfcx6jaG8rNvvUMwptvTobC35ynUtKKA8ItMQ7Dh3So3gsYjWVqVHR2OkJv8A5Sza/wD1DWxCjLaez36uSLWtuborn4DBfm//ADGO4m0+p5hl+GVW+GMb31laq2msxLfHNp7yzePWb41K+9ZhvrlCmNOURfilO6rfLOFZZLR7/mBEX6/+ZSHwjoNK/C0aqd2WFfhj1l4w2kqVA2hPvTU/5RajgWho85RVtxaU0G4DoOHvzlN4JVW/EspD4xAq6RR4mUl+GYg3/JL+LRRbn/HjmHKnC53wUKYFpuE3CVMLi7BiLLHun4Q3GbDllEWuoBI8Z2aR6WRQGFpT+sTINDYSlT95pQpe6sY+UqCNijyMreTmPWI7RZWPwGM596ClkScCTgSPWZFC5CbiFlN+UdyOfQFvv0iDf1rwUR7giVt9jEp5V0lZmAANM7p49f8A5jciVEdvExaSDQDoFNuG0poD+SGoRwNBQ9xpnWAdBD7gZSW/5oq/vKa+Cxmle3vQ1ba7Mx2aNTRQbmdmk7NIKroAIaXlKVa2it0GVBAyKD84qBFmDY6Mw1g0vl1my+UWuouRAMix6RUAESl9YlMeQ/jq0G3OLQstbIPlO8n0neT6TvJ9ItRMUwsYM3Xf3jM5fI3yneT6TvJ9J3k+kWrty1vKChtSi2lLFbbNlO6WjJuuIa7YgxsMr3vzlSscQes190pYdTfKLXjUjzEZxXIv5TvJ9J3k+k7yfSeyK1zlIzQ1TiTqb7pslN+hUNUpYzb7XP8AtNgxy6TvJ9J3k+kSirZjuvFHnEw+fIMgnbn0nbn0nbn0m02mYzaGsRKlnz5o9Zqm8ztPtO0+07T7RirXvNapUXm32mfToemDlvzhqtXOpgw97i0NS+X9p2n2nafadp9oKK62m0Z7Q2Oa56TVL5T8p2v2i1Npe3lFwy7qZlSoR+WZXOUztftO1+0XI+Yy3hrEHl+iu3gsZMPiGVR4TvTzvTwJXrGoPOLWZTktFHl/VVnG8LGyV3AnbvO8PCz3d2i1mXKxWMmHqsqW5Tt3neHn4zM89odCAV/RirbiIalTC3Y+c7p953T7y/sn3mXC08g/qyji6mXOH1nd53eB1oWImzUWWbSrRzNO7zu8v7PAlFcq/wDnb//EACwQAQACAQMCBAYCAwEAAAAAAAEAESExQWEQUXGRofEgUIGxwfAwQHCA0eH/2gAIAQEAAT8h/wBc7J9qMgNicMbAA5YUiHYM9w6VhvwIWCB3IPYDliPl5ZwPOWOjDPMVS4G9xidNcie157XjHq51vAPKp6PQ/OjJ10UJeuGiN2rXE0yez0jACyHUuRXVg+rDXvFgFS2mJlKLKMxLcFV6R4YzcR7fjHqDElkHeNoSUQ5zgiANqzWHLXLs5Gio7jNo9rhdVLDErZ8rjE7h0BjnGSQuHHzd1QP+aDiJoK2pjOgbmWKU6msGyoZIe9zKOCsMHWMBWwZuYwjJU2pM1ZmTKSOzZA5Q0BsITwW2+As10DiObWK9uZeR8LWkOvrdxLSkTKUbHd4xEIZSUHmtJqdzk1KiQVQVW+b8VEbXW40ljRiqIc1yRhJBlY7BWwiZyj7AdGkWFZqTeQZiqThwRol2LnL0kFSnJYVA2veZYLH0JlZ1cMAEqAUGl+IrIuR4EbHc48Uz08RSAtGB3Jlm/wChAuNb7vm5NaisRfp4uHmg7eh5XKsMcIjJFE3vcWY1ejYgssxXTywqJAW6aRcKOMwwB7TNHaCO/qAxUCM4IC901Lp5YVtHstGKwQSWFNzA2dp2QIoEMLrAUzA1tJ83QTJczrWvBADDbySnkdmFB47kTVzwlz0N4AIv0ayA0p5SygLYmG3mTjeUI6ypgQa2ll7HI6cMNoBNaHQSLUvFK2e9z3v+E0XpVEYLKuZtEcbynGjjQLRS6qKju/iWiNig0KmbR5Smrtx/QzF4WHHUoxHLvrHikINqcR8I9qnB8pwfKcHyhjAW4g2fILtDbDFtFDKxqcCB8EABMy4rCBU4s4s4sBu6WpUTJpnFnFlatYajRZHi8OuD2mQg0bNiLqaTiziyhWMvEeqmcWcWcWXR2Q61U4s4s4szMMHEmeuimYdqujpMZbgVGXleE2zLSC6dRmV9MGHJKPg0m4nReqZxumGaAwRLIlTI1jGcCXyTbycKcacab1StUs3i6bRTOW/wW7yUQ3OvrFAalr1cbJ+aMA5afBBAmAE9pmD8cpMWzMvZKwxMynvHV8E6DYgOYu9DSaFsW95SRuRFHBYzNWvfM11DgJ7HOaFJAPIJ9ZYQV6vEz0lRB7EayNACxjGKYANezM54R0GmeJRNtuzSPbNVi0LVM8HOhvYBDBW6EuNTsmSi4Bly/c57tKlsh6PBbBa81cuEbjpXqdQH3SMJqgMeEqNCqIKX6cZghxHIcbI47heCMYaATO/rIgBqMG1058MIBWAQFYsTLZ12X9okwb0IqRBRHQaCPUOwHazPjLFaEo60TagUCvY5o/8AoYuMt1S9zEaS86cqq2i+2rRn7hLUQO80zlRNMAL+jNApEpKRZ4kcg39xw7C/mLRhUkbLQEZtPeis4GIqSqKqim1pxlt5NUsXABPWAVR0fpNKYKAocMyiUudZk5FB9YI2Rnzl2OwhNrWV6YJU7zSFb1BcTILCbRASGnQcYaia6zJ3JAas6HnN2R4UXW/PjHGzkqbXVJXrUesy/Tc48zRy3maClWBQ1BS6ywcLcDhEUZ+AgtaH3mu3T7S1DJ2WZr8AQbJQ+vTN+ovOXk2u4MQekAFTAS/zM/aNv7X3mBqUzxnJYxsWbqifHmCs0e4gVFCUgWPj1PaEycn0MuiV9ydoyLxBxuE4oKuVAzZLvFG2E9Zga77iJuyQmUTuKkw2ZAZe2BcOzhFLMjRjaKyWipdesN6mcqm6698s7TlSnE2KYonAMS8IhRIFlS1RRyRIIrEXmRs2bmFU1UhfaNlb5KesJK2Y+cyRYtJfyHJ0IPofOIXhJ8WzXDV5LG8RS/OafQ7doA/gJjMOJYypgAZssHV1bekVJjZQQamy1wwGykBrRKa8pmUrtp4pUnEdYN7QD7QDrzJiLpEdINPItL1NFlA2aRQUXCaitbznbkfaJqt76wsOUCYEkUe820estCi2+NNYLNR8x/4u89/nvc0/Npuy2xrWgxdrijO3sgCkHKoqpYZd/cmqaX0lhlyInsQ3toqFsxAIpeGC3UJX+BSON+hMy6PXxgNoA2nsc9rmPowcSlQPyhZYzOmEhvADMD6ouNf8ZisV2YTMKpXkQfBGXcyoxnPpE50giilrPA84UuVtZn4vKFalDKhYiStO8EIUFazh9YL3EZUVGMcXX5ThwIaDQEpSsnRl+JLeFFPWDHrM9MHagrrmpHqOJOF8xhpI7PE20VHiAwkUsdu4oMoTIIMHQIPAveFnASsBJqb6OTzhBlf8vj3OKj3kdD4GMYtZLMEHXWZ1GLrAVZGfqMYUlgNMYdAmDtLoXdYlWNCMM6K5YLr2jXb7whUdlI81ByaFrEugpaOoxskyXawZzHNVfMn1lddKGGzEsV46MKNCF1EpIQ42vfV3S5S9frMrWDHhF3rCEEBVVkgDTdqmWCW5FqGaq+Cqq2p4RzrNgqZFrCkgUTtGCo6I302OIXaVLqE032OqqALBsKDWpshqqoE3LLroBY6VCFL0VriukHR0GJpoMpCdyo3dKqh0acSirtjjA/JeTh9Ijhkrq7j5VwR3wISca0/tKjTUgxAuA6EoVA6Xtai5lbEzDerR1EBS95jPABZBROPko3W4Y+htrHIjkQGhWQFrv9utcKSI7y5n62frZaTVmZoytVE991bn62frYDGRzK45p/nb/9oADAMBAAIAAwAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQxzjBTCBCgTAwAAAAAAAAAAAAAAAAAAAAAAAAAABDBjCyAiQjDzggAAAAAAAAAAAAAAAAAAAAAAAAAAATBSxyBywhABjAAAAarTcsEokQgkAAIEYAEiUAPbKIoQ0wEAAEgwgEAADbLSVm1HnOJqLVk7F/wC8jAhEufmEFtNdvTYPz8AAA9bRcYrEbj3WLSJSN4XiGMk6ZLJ9wKd/3rdplOAAAWd8w9uWT6a3Ns5UnwXbxzSwmhQgzgzgVEteFdAAAAAAAAAAAAAAAAAAzBggAAAAAAAAAAAADDQhCCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/8QAKhEBAAIBAwMDBAEFAAAAAAAAAQARITFBYVFxkRCB0SChwfAwQFBw4fH/2gAIAQMBAT8Q/wAk6gLUVTpVQB1LnBkYBCglvaW6KcjxMlVmcjxEy1R20LbrE5hVOlnNQXd4iOVRChc5HiBWKmgFnI8RGFIRNaD0HwIuDjifoGEhpnJKdYoTkgjpKSxlk5JZV+ln0WcWD4fmMMUDPS4uAr3hq0sDeEbEGa5ikSLzKhC80KtvbSKVMbIArZq2Jif9sS89y35vMFjoqHWGwQ6kgQslkHB0uBQctSfQ1KAl9o2KobFWr3lugF21RuMgKAM3xMz3nDJGxUDvF7I6SnWRUKWHbc8sulLfWU4ND3jl28y+sgQnQO7MP4dWPIB3Ykg3ywgK2vWXEtqVIVHr0+gdzK8i42ACaztHbXCB2laQX+2IMAJv1lAtzFdAneVOMomv2/dgLE1e8MsKAHu2wqTIUe8VOsZzMMp1OekehoA++sIpdj5ga4BTgSd++/aAnWOLYXafx+IzRxN4zEzDXTKgWsOZDEG2qEJ0IVz9E255i5VmaYMWoasVA3lrcs2WY+ZtcpFqZqX59FW6tP3B8RhaHg+IdrdU/eHxFLU4cHxKYN1lGb1gk6mZebpoo20mx5ZjtK0fVP3B8QzUG6o1JsUUYmwQTCQailt00mOvs/6g5AKpusu5Kvo74Ch0npTtZI3uAUMZVFjJZvoSBYQAVBDWcg6xQuNgzChVMXECSFuGX+jaW8LJfif9/OA3In82kD3nE8TRI7RdaH2lGzxAKFH9r//EACcRAQEBAAIBAgYBBQAAAAAAAAEAESFhMRBBIFFxgaGxMEBQcPDx/9oACAECAQE/EP8AJLHwEOPT8X+gbLOPnhuy7LTzdl2QV5I6Ad2XZaF2Qj4kF2QCS876b9GJwuuTo2n8+4fPi0g2Qc6ncDDzIT+0WYPqwe8vdGNDe2RCXj3bk+QD730uCBZN7hI9dymDxYafzYjSmveALmdtpW/dstuq945Vw2aqshpt+TBhDG7e5SCJCJ5WLOMc1bmtvNs0JcTsL8Bg/eiS8SbgXiIzF4tt3D/FQcvsH5utCOS+79Q09o2ZQymhAFKOYaeQP6g66Pz/ADiaTiy0cN12WAiRLkvzvOy3AuAXgy8mBzbXIhIeUsuQZ4EzO3DkdT8GTzZ6VTS4O49KMTxjHESCZOuQz7Is2O2el4cG4lGRnoz+khduwJDIcN9Hgy4suuBdC5N9FNLV8XXKGQAwicC64cl5wkHBHN/0eXhj53/GJfTHo/mQfN0QB4ui6Lx/a//EAC0QAQACAgAEBQQDAQADAQAAAAEAESExQVFhcRCBkdHwobHh8SBQwTBAYHCA/9oACAEBAAE/EP8A85oGUO7C7H6P3QStaTSPCLbQR+S7SfvP1mCJYidIMVNAp9YSadJYzqF4glaa5faHwAaA9mBkN4j906B5afSdKnGfvPnX+z5l/spCPIPs8W3OIR9ZaYLf+Y/3WZsIWuMqTdcOx6doXP8AesO5CrDFwT0Y17luNecrBaNNw5jgmKhqmYnjqsnkjK2Tpp5zHsnVWcbjDC5ju3jGHBoMv8gtYI9nnBraV2HLpH5dNi1zYvxoj8cQgUZd/sr2bh9i5W/yW5onclG8LmhCmDJK7g80FIb85eDq2y/W1jDX9v22IECF4C+MpAWmgrxmbUmV3JbJo3h1mqSnsuP6COJxg/DduKhA25xHOI2Eo7GWaq2aI9TShUw9iq0Tedmq3pD3XM3ZiL8Qbu1Q1EQ9bJQ36lrAfJEt8kEhD5lDBnoiGzEG5yJFrUFtiCm4CN0YrcId4RHJMMMga2/25LNCspaQecGM2RDm6iy3HKxC+PRyVDqth5o5wU6q55cJVVoLJrcApa7beIpm0hyson9hvGoXu5nrE1o05LldxZODnEc1VXsy4/FsHJUVa3TiOeUTBUWA5wsa5Hf0jlvxfsKUw042qIWg2+MTAi+N0lOKK8X1hXxCThiXeB+o/t7WDFS4ibXIIuqhS9Ww+wJS0rHxL91POO3sMrJUXrS22CrEJQ0XOmGOCCVXiX7jfh4QLxx8YieLDnBu9heLoQt2Kx5jWAplcbGVX2i85dWe0K+oB45NQPa4NOPpLwehtCo1Um1s9pcqDHFqJGqacERJQ+cIxDlymscIRF7R4GWsw0f21eIdS4PIGIhuWQxqFuOUq0VEYyBQmsrFhGrI/wAkbcZlC6UMSwggogiwHMSntRwMkLHBvBAmwHoJhPO9I4cQjRETkVeJj/wIE4R5EPgI8iVCZh4cRkyWfDQTfjGIFQFbQv8A4IQDqw4qwS8xGiL2T9Dn6VH8ClWYYVlJaA/8gVdRaS2BpgpBb6YgybUlIaP+4ULCcod2IV3OHCqFeN+taEvUEIAkBuVD0tB3P0Ofoc/Q4FBgAJQvM/oHblFBIy1h73NH2mBoJClxwnx/xPn/AInO+flA0uKccYssCqrxZrWGArzI+pHGJUQfFmpX5QQqGTMs0byA7RzFm2QqunWMHpcBjkaOFeLMMB0CUo8JRWvFmFaId8yiWnJS0g+LMHE+ggjvdF73L+NExlLDdV0PDZAttkUhflCYuBRUaxw4dzN2vL8T9R+J+g/EJyYLthtAOMRaROk9J0kfo12llXwlZK6+BdDL2jlLSWRWMYiIgtZW1KiAdJpfy+NFZLWvbKc+UwjB4S7I9ZVxyz+a1wh142g9Y6gAKiDo401wmZ2eDA9BWaNjarzaYR5AqHHhxBKEO9htpFg80LFxHcOBDnC58foZ1VdC5sBvvJHsb2WUjCpSXF7ld1Di5o5xdQagwCRv8u5fGYLwQnOC2Cy7h9jlHzrd0Kt79YrN7JdF4gJMdVFRTDjUGGTpYc6izQXiISYOFSFV6tx+plwPyh7+cRZJeULXxcwa031ahFlUPt4JvxDyhVOHYCCNYktgZlUargNw/dw6GZ++R1wdGJ2lUekBgJMTcySjcfrIENzClf8Abm1A6KQVNu/1lhIyrovULhh5flAxNauksMRWbzGaD1jnmPv7LADG6GrxE0Pk1FxYRqb0iyCS5MGAnTUXhhtqIYNqswXaedEy86FeT4BABF9IZK1q4XKDuHRcNfyB5QWsxCQgONsus7Fd4i1RZeDpLBMJhHq0YPrNtBy3FrnH6tJCPVFFmOrbzwnw+1GjZhC19Ifwyg3WZTgYOWAm5z3RcBsknHKfvT2laAyg1iXANarkJSCkruhmyq2YpjsGkULxmVMKMvKiVq6AFd2JbAp/TKJU24PDUcUK0LokJivnnWX1jEN5Idv5o9oaVCtMUdodcqhvOEpKzCxsixQv1kPIK61n0ihEd2e0AeKgb4x7n2A1v2jMpHzqPd4qTtABDgV4YEs1nowIGK+keEqTV4ICaz7sqgZwcEDBm1A70UMrmRrIHyirshfLChCgtGE7T90e0JjGU7pWsAccm5fNNlxogpHKOtkdMe1BH0nHzgGZfD1TM1WwbXWaYGigu7YbI1F2+ksMixs9pXrQAeYQr61Fbhago7N+kXep2YfSV4WHnCEXdu5Ki3XhDLvcQ0mhExqfiqzxZgIAFM8Zw/khGTtGrUdN9WZN+KnKLgRKoL7zr7EJo2rK9COusErROY2FUNJ5ROvfMd5YEDOXvE80Z2DzmeIb6JS9ARer7zPqk8dsuGawqdDC5nOJPMiWM91Osp6GB5SsHHVpxDQaLvsQ+PI+iWatFubjAo6sP2yvkuCPuyi8aWNlsu/A5cgI14m+usLhhFNWivjUT2/POPuiivvASL+oMqcZiRRA49yJw6BzFpbuDgkM/Ypcs+zcgvU/UIrSXoWVbLFX0gwuparmcawMTHQj2eEDLErZypYDFEu4ygR/ka7RvWyEJaQFA0Ag3dEy0MAec4ncEdGAvAsPaDuGoa5ygQuov9ii/wCEW/2KCYZfTfOAoka7AiFGvqIEVCEVN5EWopUgGSbHeE2AE3CgAy9wxFHykIXdzO5lS+NIshZmZSsjMxXQvaAqTNOZ/N9qbJlust95fwsKpnz3tOV83aaAVwrB3BDd22sGBNVcYCU3xAxCwqO3tHviG9PlFtG5xzm2eEDGzL4il4t2Q1KDllqFbhYzh9Y2MSKdGMtOcXGiqF46joUokIwtuLV4bsJk5o7Sx/ye0/VPaAcYKWkyrxrpzKShQyieGNS7t3Mo82O+EtVvDnWI/jIbIHiViiPW8wLYyKl7YDHRaK24oLVbSphC4KTPqIT7iS+o9SKBfGpedCKXWo+8jB5wvqhKcoRkIVylTJpOIUjLqZiFiDARZppytDCKPRiZpRLEYLtZgnZBdZxDm5AK6i5g+nMVc+h+IJFz0/EUsNB4hGp7hoe0RIqcrJOGdE6YtmcqR95ZA5hENXQH6lr6VccYa5jeTHvTEeQRrKEDiVDNVfCO2mzzT5RPpZoFnNzR0fzpOs2l4ZbtEY59J8n7T5P2mL4/pFBhaOvKHkpDQpHQLiBG58fpPg/afJ+0p3mcg3yiOVZ3GAcoDnrAjrpD0Qoiu0pHC4OFeRvxvlEvnBSYfeN+GOBflMewpFMOIF1q6sqDmdIct8oH8P2nyHtA7fB5RiiJwKlSm8Eea1aj3MVapdR1LdX4ruH3pQrce0OO0JugFQzEXBwfSHmyn51LgEOlNgImvLW+eOIr1OVIsV7+OE+G9p8J7Q6zYwublDqIZcekvYobpqqjynM3qdd8dp13x2nXfHaC8aPDVVCintsEJ0LWf8hE6FEoSgNhKmvZvf0lpSWqWJUz+z5idR8dp13x2l2OH41A1oBg2RSxPGISqlqqQwTc8QzeiHaZPf8AaL05Ft/pCLrzpjMO5bAp0iV4nHcRLTj5/afD+MuFeGNR2rnAcm4Ipoegf8K5yu3pK7ekrt6Su3p40Su3pK7ekrwo8aPCjxoZXb0ldvSVKxK8azmZLrN9kxzH9rLGpxvr/mZP9vzLocXcYBdbWLdsEAwXoP8Anx3KP5cf4Gpx8XgtU2IRFjTQ29Z8v8xCsvznLQsVZLMfcghRMTKGq7ny/wAzpPzvCe7WV4yqU7msyiNAP6WhYD5iUxNha3KtvCfqPtP1H2hAiWY+04YmCj/kCij/AMq2FfNDuJIRa19p1Hp9p1Hp9opu0Kb9JumVPJiq+DHtOo9PtOo9PtGNjWY+0BDqsf8AplH/AMq//9k=">
+      <span id="brandName">Pack设计规范-V1.5</span>
+    </div>
+    <div class="search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+      <input type="text" id="searchInput" placeholder="搜索标题、正文、标签…（按 / 搜索）" oninput="handleSearch()">
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" id="themeToggle" type="button" title="切换深色模式" aria-label="切换深色模式" aria-pressed="false">☾</button>
+      <button class="admin-btn" onclick="enterAdmin()">管理</button>
+    </div>
+  </div>
+</header>
+
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<!-- ===== 前台阅读视图 ===== -->
+<div class="reader-view hidden" id="readerView">
+  <aside class="sidebar" id="sidebar">
+    <div class="side-label">目录</div>
+    <div id="navList"><button type="button" class="chapter-row all"><span class="ch-title">全部章节</span><span class="ch-count">5</span></button><div class="chapter-block" data-chapter-block="ch1">
+        <button type="button" class="chapter-row " data-ch="ch1" aria-expanded="false">
+          <span class="ch-num">1</span><span class="ch-title">入职指南</span>
+          <span class="ch-count">2</span><span class="fold-arrow">▸</span>
+        </button>
+        <div class="sub-toc">
+          <a href="#item-i11" data-item="i11" data-ch="ch1" title="公司组织架构"><span class="num">1</span><span class="label">公司组织架构</span></a><a href="#item-i12" data-item="i12" data-ch="ch1" title="办公系统使用"><span class="num">2</span><span class="label">办公系统使用</span></a>
+        </div></div><div class="chapter-block" data-chapter-block="ch2">
+        <button type="button" class="chapter-row " data-ch="ch2" aria-expanded="false">
+          <span class="ch-num">2</span><span class="ch-title">产品与技术基础</span>
+          <span class="ch-count">2</span><span class="fold-arrow">▸</span>
+        </button>
+        <div class="sub-toc">
+          <a href="#item-i21" data-item="i21" data-ch="ch2" title="储能PACK系统概述"><span class="num">1</span><span class="label">储能PACK系统概述</span></a><a href="#item-i22" data-item="i22" data-ch="ch2" title="高压安全注意事项"><span class="num">2</span><span class="label">高压安全注意事项</span></a>
+        </div></div><div class="chapter-block open" data-chapter-block="ch3">
+        <button type="button" class="chapter-row active" data-ch="ch3" aria-expanded="true">
+          <span class="ch-num">3</span><span class="ch-title">常用操作流程</span>
+          <span class="ch-count">1</span><span class="fold-arrow">▸</span>
+        </button>
+        <div class="sub-toc">
+          <a href="#item-i31" data-item="i31" data-ch="ch3" title="物料请购流程" class="on"><span class="num">1</span><span class="label">物料请购流程</span></a>
+        </div></div></div>
+
+    <div class="kb-filter-panel" id="kbFilterPanel">
+      <div class="side-label" style="padding-left:0">筛选条目</div>
+      <div class="kb-filter-group">
+        <div class="kb-filter-title">重要程度 <small>可多选</small></div>
+        <div class="chips" id="kbLevelFilters">
+          <button type="button" class="chip" data-kb-level="important" aria-pressed="false">重要</button>
+          <button type="button" class="chip" data-kb-level="warning" aria-pressed="false">注意</button>
+          <button type="button" class="chip" data-kb-level="normal" aria-pressed="false">普通</button>
+        </div>
+      </div>
+      <div class="kb-filter-group">
+        <div class="kb-filter-title">最近更新 <small>以本机记录为准</small></div>
+        <div class="chips" id="kbUpdateFilters">
+          <button type="button" class="chip" data-kb-days="7" aria-pressed="false">7 天内</button>
+          <button type="button" class="chip" data-kb-days="30" aria-pressed="false">30 天内</button>
+        </div>
+      </div>
+      <div class="kb-filter-group">
+        <div class="kb-filter-title">标签 <small>同组多选为“或”</small></div>
+        <div class="chips" id="kbTagFilters"><button type="button" class="chip" data-kb-tag="安全" aria-pressed="false" title="1 条">安全 <span style="opacity:.55;font-size:11px">1</span></button><button type="button" class="chip" data-kb-tag="采购" aria-pressed="false" title="1 条">采购 <span style="opacity:.55;font-size:11px">1</span></button><button type="button" class="chip" data-kb-tag="产品" aria-pressed="false" title="1 条">产品 <span style="opacity:.55;font-size:11px">1</span></button><button type="button" class="chip" data-kb-tag="储能" aria-pressed="false" title="1 条">储能 <span style="opacity:.55;font-size:11px">1</span></button><button type="button" class="chip" data-kb-tag="高压" aria-pressed="false" title="1 条">高压 <span style="opacity:.55;font-size:11px">1</span></button><button type="button" class="chip" data-kb-tag="工具" aria-pressed="false" title="1 条">工具 <span style="opacity:.55;font-size:11px">1</span></button><button type="button" class="chip" data-kb-tag="流程" aria-pressed="false" title="1 条">流程 <span style="opacity:.55;font-size:11px">1</span></button><button type="button" class="chip" data-kb-tag="入门" aria-pressed="false" title="1 条">入门 <span style="opacity:.55;font-size:11px">1</span></button><button type="button" class="chip" data-kb-tag="系统" aria-pressed="false" title="1 条">系统 <span style="opacity:.55;font-size:11px">1</span></button><button type="button" class="chip" data-kb-tag="组织" aria-pressed="false" title="1 条">组织 <span style="opacity:.55;font-size:11px">1</span></button></div>
+      </div>
+      <div class="kb-filter-group">
+        <label class="toggle"><input type="checkbox" id="kbFavoritesOnly"> 只看我的收藏</label>
+      </div>
+      <button type="button" class="reset" id="kbResetFilters">清空筛选</button>
+      <div class="kb-filter-summary" id="kbFilterSummary" aria-live="polite">筛选中：常用操作流程（1 条）</div>
+      <p class="kb-filter-hint">不同筛选组之间为“且”；搜索支持标题、正文、章节名和标签。点条目右侧的 ☆ 可以收藏。</p>
+    </div>
+
+    <div class="side-ai">
+      <h4>🤖 豆包助手</h4>
+      <p>把知识库目录复制下来，粘贴到豆包对话框，就能让 AI 基于公司文档回答你的问题。</p>
+      <div class="btn-row">
+        <button class="mini-btn" onclick="copyToc()">复制目录</button>
+        <a class="mini-btn primary" href="https://www.doubao.com" target="_blank">打开豆包</a>
+      </div>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="doc">
+      <div class="doc-head">
+        <h1 id="docTitle">Pack设计规范-V1.5</h1>
+        <p class="desc" id="docDesc">在这里查看储能Pack设计规范、操作规范和常见问题解答。</p>
+        <p class="stat" id="docStat">共 <b>3</b> 个章节 · <b>5</b> 条内容 · 当前显示 <b>1</b> 条</p>
+      </div>
+      <div id="docBody"><section class="sec-block" id="sec-ch3" data-chapter="ch3"><div class="sec-h"><h2>常用操作流程</h2><span class="shown">1 条</span></div><article class="card highlight-target" id="item-i31" data-item-id="i31" data-chapter-id="ch3">
+          <div class="card-title kb-card-heading">
+            <span class="kb-title-text">物料请购流程</span>
+            
+            <a class="kb-anchor" href="#item-i31" aria-label="本条链接" title="本条链接">↗</a>
+            <button type="button" class="kb-fav " data-kb-fav="i31" aria-label="收藏条目" aria-pressed="false" title="收藏条目">☆</button>
+          </div>
+          <div class="kb-card-meta"><span>2 个标签</span></div>
+          <div class="card-body"><p>1. 在OA系统提交请购申请，注明物料编码、数量、需求日期</p><p>2. 部门主管审批</p><p>3. 采购部询价比价</p><p>4. 下单跟进到货</p></div>
+          <div class="kb-tags"><button type="button" class="tag " data-kb-tag="流程" aria-pressed="false" title="按标签筛选：流程">流程</button><button type="button" class="tag " data-kb-tag="采购" aria-pressed="false" title="按标签筛选：采购">采购</button></div></article></section></div>
+    </div>
+  </main>
+</div>
+
+<!-- ===== 后台管理视图 ===== -->
+<div class="admin-view active" id="adminView">
+  <div class="admin-wrap" id="adminLoginPage" style="display: none;">
+    <div class="admin-login-box">
+      <h2>管理后台登录</h2>
+      <div class="form-group">
+        <label>管理密码</label>
+        <input type="password" id="adminPwd" placeholder="请输入密码" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="login-err" id="loginErr"></div>
+      <button class="btn-primary" onclick="doLogin()">登录</button>
+      <button class="btn" style="width:100%;margin-top:10px" onclick="exitAdmin()">返回首页</button>
+    </div>
+  </div>
+
+  <div class="admin-wrap" id="adminMainPage" style="display: block;">
+    <div class="admin-head">
+      <h2>内容管理</h2>
+      <div class="actions">
+        <button class="btn btn-sm" onclick="exportData()">导出数据</button>
+        <button class="btn btn-sm" onclick="document.getElementById('importFile').click()">导入数据 JSON</button>
+        <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importData(event)">
+        <button class="btn btn-sm" onclick="document.getElementById('importFiles').click()">导入文件</button>
+        <input type="file" id="importFiles" multiple="" accept=".pdf,.docx,.doc,.png,.jpg,.jpeg,.xlsx,.xls,.pptx,.txt,.md,.csv,.html,.htm" style="display:none" onchange="kbImportFiles(event)">
+        <button class="btn btn-sm" onclick="kbExportOfflineHTML()">导出离线网页</button>
+        <button class="btn btn-sm" onclick="kbExportPDF()">导出 PDF</button>
+        <button class="btn btn-sm" onclick="kbExportEPUB()">导出 EPUB</button>
+        <button class="btn btn-sm" onclick="showWpsSettings()">WPS 在线编辑</button>
+        <button class="btn btn-sm" onclick="showSettings()">设置</button>
+        <button class="btn btn-sm btn-primary" id="btnSaveChanges" onclick="saveChanges()" style="opacity:0.6">已保存</button>
+        <button class="btn btn-sm btn-primary" onclick="confirmExitAdmin()">返回首页</button>
+        <button class="btn btn-sm" onclick="exitAdmin()">退出后台</button>
+      </div>
+    </div>
+    <div class="admin-grid">
+      <div class="admin-side">
+        <div class="side-t">章节列表</div>
+        <div id="adminChList"><div class="admin-ch-row"><span>入职指南</span><button class="del" onclick="event.stopPropagation();delChapter('ch1')">×</button></div><div class="admin-ch-row"><span>产品与技术基础</span><button class="del" onclick="event.stopPropagation();delChapter('ch2')">×</button></div><div class="admin-ch-row active"><span>常用操作流程</span><button class="del" onclick="event.stopPropagation();delChapter('ch3')">×</button></div></div>
+        <button class="btn btn-sm" style="width:100%;margin-top:8px" onclick="editChapter(-1)">+ 新增章节</button>
+      </div>
+      <div class="admin-main">
+        <div class="main-head">
+          <h3 id="adminMainTitle">常用操作流程</h3>
+          <button class="btn btn-primary btn-sm" id="addItemBtn" style="display: inline-block;" onclick="editItem(-1)">+ 新增条目</button>
+        </div>
+        <div id="adminItemList"><div class="admin-item-row">
+      <div class="info">
+        <div class="t">1. 物料请购流程</div>
+        <div class="p">1. 在OA系统提交请购申请，注明物料编码、数量、需求日期2. 部门主管审批3. 采购部询价比价4. 下单跟进到货</div>
+      </div>
+      <div class="ops">
+        <button class="btn btn-sm" onclick="editItem('i31')">编辑</button>
+        <button class="btn btn-sm btn-danger" onclick="delItem('i31')">删除</button>
+      </div>
+    </div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 模态框 -->
+<div class="modal-mask" id="modalMask">
+  <div class="modal-box" id="modalBox">
+      <h3>全局设置</h3>
+      <div class="f-group"><label>知识库名称</label><input type="text" id="sTitle" value="Pack设计规划-V2.0"></div>
+      <div class="f-group"><label>简介</label><textarea id="sDesc" rows="3">在这里查看储能Pack设计规划、操作规范和常见问题解答。</textarea></div>
+      <div class="f-group"><label>修改管理密码</label><input type="password" id="sPass" autocomplete="new-password" placeholder="留空则不修改"></div>
+      <div class="kb-filter-hint">首次使用默认管理密码：admin123。离线 HTML 的密码校验仅用于防止误操作，不等同于服务器端安全认证。</div>
+      <div class="modal-btns"><button class="btn" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveSettings()">保存</button></div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>window.__KB_EMBEDDED_DATA__={"bookTitle":"Pack设计规范-V1.5","bookDesc":"在这里查看储能Pack设计规范、操作规范和常见问题解答。","adminPass":"admin123","chapters":[{"id":"ch1","title":"入职指南","items":[{"id":"i11","title":"公司组织架构","level":"normal","tags":["入门","组织"],"content":"\u003cp>公司设有研发中心、生产制造中心、质量管理部、供应链部、市场营销部和职能支持部门。\u003c/p>\u003cp>新员工入职后由部门主管介绍本部门架构和主要职责。\u003c/p>   https://sspai.com/?utm_source=wetab.link","updatedAt":"2026-11-10T03:21:33.568Z"},{"id":"i12","title":"办公系统使用","level":"important","tags":["工具","系统"],"content":"\u003cp>日常办公主要使用以下系统：\u003c/p>\u003cul>\u003cli>飞书：内部沟通、审批流程、文档协作\u003c/li>\u003cli>OA系统：请假、报销、考勤查询\u003c/li>\u003cli>知识库：技术文档、SOP、培训资料\u003c/li>\u003c/ul>"}]},{"id":"ch2","title":"产品与技术基础","items":[{"id":"i21","title":"储能PACK系统概述","level":"important","tags":["产品","储能"],"content":"\u003cp>储能PACK是储能系统的核心单元，由电芯、BMS、热管理系统、结构件和电气连接系统组成。\u003c/p>\u003cp>我们主要生产588Ah和648Ah电芯对应的标准PACK产品，应用于工商业储能和大储场景。\u003c/p>\u003cp>参考：\u003ca href=\"https://www.zhihu.com/topic/19813432\" target=\"_blank\">储能系统入门\u003c/a>\u003c/p>"},{"id":"i22","title":"高压安全注意事项","level":"warning","tags":["安全","高压"],"content":"\u003cp>储能系统涉及高压直流电，操作时必须遵守以下安全规范：\u003c/p>\u003col>\u003cli>操作前必须断电并验电\u003c/li>\u003cli>佩戴绝缘手套和护目镜\u003c/li>\u003cli>高压区域两人以上方可作业\u003c/li>\u003c/ol>"}]},{"id":"ch3","title":"常用操作流程","items":[{"id":"i31","title":"物料请购流程","level":"normal","tags":["流程","采购"],"content":"\u003cp>1. 在OA系统提交请购申请，注明物料编码、数量、需求日期\u003c/p>\u003cp>2. 部门主管审批\u003c/p>\u003cp>3. 采购部询价比价\u003c/p>\u003cp>4. 下单跟进到货\u003c/p>"}]}],"attachmentsMeta":[]};window.__KB_EMBEDDED_ATTACHMENTS__={};</script>
+<script>
+// ===== 数据 =====
+const KEY = 'h5_kb_embedded_mwaa082x_ivdtx';
+let appData = {
+  bookTitle: '内部知识库',
+  bookDesc: '在这里查看公司内部培训资料、操作规范和常见问题解答。',
+  adminPass: 'admin123',
+  chapters: []
+};
+let curChId = null;
+let hasUnsavedChanges = false;
+let openChId = null; // 当前展开的章节（侧边栏）
+let searchQ = '';
+
+function sampleData() {
+  return {
+    bookTitle: '内部知识库',
+    bookDesc: '在这里查看公司内部培训资料、操作规范和常见问题解答。',
+    adminPass: 'admin123',
+    chapters: [
+      {
+        id: 'ch1', title: '入职指南',
+        items: [
+          { id: 'i11', title: '公司组织架构', level: 'normal', tags: ['入门','组织'],
+            content: '<p>公司设有研发中心、生产制造中心、质量管理部、供应链部、市场营销部和职能支持部门。</p><p>新员工入职后由部门主管介绍本部门架构和主要职责。</p>' },
+          { id: 'i12', title: '办公系统使用', level: 'important', tags: ['工具','系统'],
+            content: '<p>日常办公主要使用以下系统：</p><ul><li>飞书：内部沟通、审批流程、文档协作</li><li>OA系统：请假、报销、考勤查询</li><li>知识库：技术文档、SOP、培训资料</li></ul>' }
+        ]
+      },
+      {
+        id: 'ch2', title: '产品与技术基础',
+        items: [
+          { id: 'i21', title: '储能PACK系统概述', level: 'important', tags: ['产品','储能'],
+            content: '<p>储能PACK是储能系统的核心单元，由电芯、BMS、热管理系统、结构件和电气连接系统组成。</p><p>我们主要生产588Ah和648Ah电芯对应的标准PACK产品，应用于工商业储能和大储场景。</p><p>参考：<a href="https://www.zhihu.com/topic/19813432" target="_blank">储能系统入门</a></p>' },
+          { id: 'i22', title: '高压安全注意事项', level: 'warning', tags: ['安全','高压'],
+            content: '<p>储能系统涉及高压直流电，操作时必须遵守以下安全规范：</p><ol><li>操作前必须断电并验电</li><li>佩戴绝缘手套和护目镜</li><li>高压区域两人以上方可作业</li></ol>' }
+        ]
+      },
+      {
+        id: 'ch3', title: '常用操作流程',
+        items: [
+          { id: 'i31', title: '物料请购流程', level: 'normal', tags: ['流程','采购'],
+            content: '<p>1. 在OA系统提交请购申请，注明物料编码、数量、需求日期</p><p>2. 部门主管审批</p><p>3. 采购部询价比价</p><p>4. 下单跟进到货</p>' }
+        ]
+      }
+    ]
+  };
+}
+
+
+// ===== 云同步（Supabase）=====
+const CLOUD_CFG_KEY = 'h5_kb_cloud_config';
+let cloudConfig = { url: 'https://hdlsqsbynzasaguprkoy.supabase.co', anonKey: 'sb_publishable_Xi00Eza3rZjiK9OE8OzTYA_88rwucI-' };
+let cloudReady = false;
+
+function loadCloudConfig() {
+  // 写死的默认配置优先；本地仅记录用户在设置里改过的值
+  try {
+    const s = localStorage.getItem(CLOUD_CFG_KEY);
+    if (s) {
+      const saved = JSON.parse(s);
+      if (saved.url) cloudConfig.url = saved.url;
+      if (saved.anonKey) cloudConfig.anonKey = saved.anonKey;
+    }
+  } catch(e) {}
+}
+function saveCloudConfig() {
+  localStorage.setItem(CLOUD_CFG_KEY, JSON.stringify(cloudConfig));
+}
+function initCloud() {
+  if (!cloudConfig.url || !cloudConfig.anonKey) { cloudReady = false; return false; }
+  // 纯 fetch 直连 Supabase REST，无需外部 SDK
+  cloudReady = true;
+  return true;
+}
+function _cloudHeaders() {
+  return {
+    'apikey': cloudConfig.anonKey,
+    'Authorization': 'Bearer ' + cloudConfig.anonKey,
+    'Content-Type': 'application/json'
+  };
+}
+function _cloudBase() { return cloudConfig.url.replace(/\/+$/, ''); }
+const CLOUD_TIMEOUT = 12000;
+async function _cloudFetch(url, options) {
+  const ctl = new AbortController();
+  const timer = setTimeout(function(){ ctl.abort(); }, CLOUD_TIMEOUT);
+  try {
+    const resp = await fetch(url, Object.assign({ signal: ctl.signal }, options));
+    if (!resp.ok) {
+      const t = await resp.text().catch(function(){ return ''; });
+      return { ok: false, status: resp.status, reason: 'http', body: t };
+    }
+    const body = await resp.text();
+    return { ok: true, status: resp.status, body: body };
+  } catch(e) {
+    return { ok: false, status: 0, reason: 'network', body: ((e && e.name) || 'Error') + ': ' + ((e && e.message) || '') };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+async function pullFromCloud() {
+  if (!cloudReady) return null;
+  const r = await _cloudFetch(_cloudBase() + '/rest/v1/knowledge_base?select=data&id=eq.1', { headers: _cloudHeaders() });
+  if (!r.ok) { console.warn('云端拉取失败', r.reason, r.status, r.body); return null; }
+  try {
+    const rows = JSON.parse(r.body);
+    if (!Array.isArray(rows) || rows.length === 0 || !rows[0].data) return null;
+    return rows[0].data;
+  } catch(e) { console.warn('云端解析失败', e); return null; }
+}
+async function pushToCloud(data) {
+  if (!cloudReady) return { ok: false, reason: 'disabled', status: 0 };
+  const r = await _cloudFetch(_cloudBase() + '/rest/v1/knowledge_base', {
+    method: 'POST',
+    headers: Object.assign({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }, _cloudHeaders()),
+    body: JSON.stringify([{ id: 1, data: data }])
+  });
+  if (!r.ok) console.warn('云端保存失败', r.reason, r.status, r.body);
+  return r;
+}
+
+function load() {
+  loadCloudConfig();
+  try {
+    if (window.__KB_EMBEDDED_DATA__ && Array.isArray(window.__KB_EMBEDDED_DATA__.chapters)) {
+      appData = JSON.parse(JSON.stringify(window.__KB_EMBEDDED_DATA__));
+      try { save(); } catch (_) {}
+    } else {
+      const s = localStorage.getItem(KEY);
+      if (s) appData = JSON.parse(s);
+      else { appData = sampleData(); save(); }
+    }
+  } catch(e) { appData = sampleData(); }
+  // 异步从云端拉最新数据，仅当云端版本不早于本地时覆盖，避免离线编辑被旧数据冲掉
+  if (initCloud()) {
+    pullFromCloud().then(cloudData => {
+      if (cloudData && cloudData.chapters) {
+        const localT = _kbTs(appData.updatedAt);
+        const cloudT = _kbTs(cloudData.updatedAt);
+        const shouldPull = (!localT || !cloudT || cloudT >= localT);
+        if (shouldPull) {
+          appData = cloudData;
+          try { save(); } catch(e) {}
+          renderNav(); renderDoc();
+          toast('已从云端同步最新内容');
+        }
+      }
+    });
+  }
+}
+function _kbTs(v) { const d = new Date(v || 0); return Number.isNaN(d.getTime()) ? 0 : d.getTime(); }
+function save() { localStorage.setItem(KEY, JSON.stringify(appData)); }
+function markDirty() {
+  hasUnsavedChanges = true;
+  const btn = document.getElementById('btnSaveChanges');
+  if (btn) { btn.style.opacity = '1'; btn.textContent = '● 保存修改'; }
+}
+function saveChanges() {
+  appData.updatedAt = new Date().toISOString();
+  save();
+  hasUnsavedChanges = false;
+  const btn = document.getElementById('btnSaveChanges');
+  if (btn) { btn.style.opacity = '0.6'; btn.textContent = '已保存'; }
+  // 同步到云端
+  if (cloudReady) {
+    btn.textContent = '同步中...';
+    pushToCloud(appData).then(function(res){
+      if (res.ok) {
+        try { localStorage.setItem('h5_kb_last_synced', new Date().toISOString()); } catch(e){}
+        var t = new Date();
+        var hm = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
+        btn.textContent = '已保存并同步 ' + hm;
+        setTimeout(() => btn.textContent = '已保存', 2000);
+      } else {
+        btn.textContent = '本地已存，云端失败';
+        var msg;
+        if (res.reason === 'network') msg = '云端连接失败：当前网络无法访问 Supabase（请检查网络或代理）';
+        else if (res.status === 401 || res.status === 403) msg = '云端鉴权失败：Key 或读写权限不对';
+        else if (res.status === 404) msg = '云端数据表不存在';
+        else msg = '云端保存失败（HTTP ' + res.status + '）';
+        toast(msg);
+      }
+    });
+  } else {
+    toast('修改已保存（本地）');
+  }
+}
+function genId() { return 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function toast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 1800); }
+
+// ===== 侧边栏渲染 =====
+function renderNav() {
+  const box = document.getElementById('navList');
+  box.innerHTML = '';
+  appData.chapters.forEach((ch, idx) => {
+    const isOpen = openChId === ch.id || (!openChId && curChId === ch.id);
+    const block = document.createElement('div');
+    block.className = 'chapter-block' + (isOpen ? ' open' : '');
+    block.innerHTML = `
+      <button class="chapter-row ${curChId === ch.id ? 'active' : ''}" data-ch="${ch.id}">
+        <span class="ch-num">${idx+1}</span>
+        <span class="ch-title">${esc(ch.title)}</span>
+        <span class="ch-count">${ch.items.length}</span>
+        <span class="fold-arrow">▸</span>
+      </button>
+      <div class="sub-toc">
+        ${ch.items.map((it, ii) => `
+          <a href="javascript:;" data-item="${it.id}" data-ch="${ch.id}">
+            <span class="num">${ii+1}</span>
+            <span class="label">${esc(it.title)}</span>
+          </a>
+        `).join('')}
+      </div>
+    `;
+    box.appendChild(block);
+  });
+
+  // 章节行点击
+  box.querySelectorAll('.chapter-row').forEach(row => {
+    row.onclick = () => {
+      const cid = row.dataset.ch;
+      if (openChId === cid) {
+        // 再次点击：收起
+        openChId = null;
+        curChId = cid;
+      } else {
+        openChId = cid;
+        curChId = cid;
+      }
+      renderNav();
+      renderDoc();
+      if (window.innerWidth <= 768) toggleSidebar(false);
+    };
+  });
+
+  // 条目子目录点击
+  box.querySelectorAll('.sub-toc a').forEach(a => {
+    a.onclick = (e) => {
+      e.stopPropagation();
+      const cid = a.dataset.ch;
+      const iid = a.dataset.item;
+      curChId = cid;
+      openChId = cid;
+      renderNav();
+      renderDoc();
+      // 滚动到对应卡片
+      setTimeout(() => {
+        const el = document.getElementById('item-' + iid);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
+      if (window.innerWidth <= 768) toggleSidebar(false);
+    };
+  });
+}
+
+// ===== 正文渲染 =====
+function renderDoc() {
+  const body = document.getElementById('docBody');
+  body.innerHTML = '';
+
+  document.getElementById('brandName').textContent = appData.bookTitle;
+  document.getElementById('docTitle').textContent = appData.bookTitle;
+  document.getElementById('docDesc').textContent = appData.bookDesc;
+  document.title = appData.bookTitle;
+
+  let totalItems = 0;
+  appData.chapters.forEach(c => totalItems += c.items.length);
+  document.getElementById('docStat').innerHTML = `共 <b>${appData.chapters.length}</b> 个章节 · <b>${totalItems}</b> 条内容`;
+
+  let chs = appData.chapters;
+  if (curChId) chs = chs.filter(c => c.id === curChId);
+
+  let has = false;
+  chs.forEach((ch, ci) => {
+    let items = ch.items;
+    if (searchQ) {
+      const q = searchQ.toLowerCase();
+      items = items.filter(it =>
+        it.title.toLowerCase().includes(q) ||
+        (it.content||'').toLowerCase().includes(q) ||
+        (it.tags||[]).some(t => t.toLowerCase().includes(q))
+      );
+    }
+    if (!items.length) return;
+    has = true;
+
+    // 章节标题
+    const sec = document.createElement('div');
+    sec.className = 'sec-block';
+    sec.id = 'sec-' + ch.id;
+    sec.innerHTML = `
+      <div class="sec-h">
+        <h2>${esc(ch.title)}</h2>
+        <span class="shown">${items.length} 条</span>
+      </div>
+    `;
+    body.appendChild(sec);
+
+    // 条目卡片
+    items.forEach((it, ii) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.id = 'item-' + it.id;
+      const lv = it.level || 'normal';
+      const lvText = lv === 'important' ? '重要' : lv === 'warning' ? '注意' : '';
+      card.innerHTML = `
+        <div class="card-title">
+          ${esc(it.title)}
+          ${lvText ? `<span class="badge ${lv}">${lvText}</span>` : ''}
+        </div>
+        <div class="card-body">${it.content || ''}</div>
+        ${(it.tags && it.tags.length) ? `<div class="card-tags">${it.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
+      `;
+      sec.appendChild(card);
+    });
+  });
+
+  if (!has) {
+    body.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>没有找到匹配的内容</p></div>';
+  }
+}
+
+function handleSearch() {
+  searchQ = document.getElementById('searchInput').value.trim();
+  renderDoc();
+}
+
+function toggleSidebar(force) {
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('overlay');
+  const on = force !== undefined ? force : !sb.classList.contains('open');
+  sb.classList.toggle('open', on);
+  ov.classList.toggle('show', on);
+}
+
+// ===== 豆包助手：复制目录 =====
+function copyToc() {
+  let text = `【${appData.bookTitle}】目录：\n\n`;
+  appData.chapters.forEach((ch, i) => {
+    text += `${i+1}. ${ch.title}\n`;
+    ch.items.forEach((it, j) => {
+      text += `   ${i+1}.${j+1} ${it.title}\n`;
+    });
+  });
+  text += `\n请根据以上知识库目录，回答我的问题：`;
+  navigator.clipboard.writeText(text).then(() => {
+    toast('目录已复制，去豆包粘贴提问吧');
+  }).catch(() => {
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    toast('目录已复制，去豆包粘贴提问吧');
+  });
+}
+
+// ===== 后台管理 =====
+function enterAdmin() {
+  document.getElementById('readerView').classList.add('hidden');
+  document.getElementById('adminView').classList.add('active');
+  document.getElementById('adminLoginPage').style.display = 'block';
+  document.getElementById('adminMainPage').style.display = 'none';
+  document.getElementById('loginErr').textContent = '';
+  document.getElementById('adminPwd').value = '';
+}
+function exitAdmin() {
+  document.getElementById('adminView').classList.remove('active');
+  document.getElementById('readerView').classList.remove('hidden');
+}
+function confirmExitAdmin() {
+  if (hasUnsavedChanges) {
+    const choice = confirm('有未保存的修改，是否保存后再返回首页？\n\n点「确定」= 保存并返回\n点「取消」= 不保存直接返回\n点「取消」后再点「确定」旁边的「取消」= 留在后台');
+    if (choice === null) return; // 留在后台
+    if (choice) { saveChanges(); }
+  }
+  exitAdmin();
+}
+function doLogin() {
+  if (document.getElementById('adminPwd').value === appData.adminPass) {
+    document.getElementById('adminLoginPage').style.display = 'none';
+    document.getElementById('adminMainPage').style.display = 'block';
+    renderAdminChs();
+  } else {
+    document.getElementById('loginErr').textContent = '密码错误';
+  }
+}
+
+function renderAdminChs() {
+  const box = document.getElementById('adminChList');
+  box.innerHTML = '';
+  appData.chapters.forEach(ch => {
+    const d = document.createElement('div');
+    d.className = 'admin-ch-row' + (curChId === ch.id ? ' active' : '');
+    d.innerHTML = `<span>${esc(ch.title)}</span><span class="ops"><button class="rename" title="重命名章节" onclick="event.stopPropagation();editChapter('${ch.id}')">改名</button><button class="del" onclick="event.stopPropagation();delChapter('${ch.id}')">×</button></span>`;
+    d.onclick = () => { curChId = ch.id; renderAdminChs(); renderAdminItems(); };
+    box.appendChild(d);
+  });
+}
+
+function renderAdminItems() {
+  const list = document.getElementById('adminItemList');
+  const addBtn = document.getElementById('addItemBtn');
+  const ch = appData.chapters.find(c => c.id === curChId);
+  if (!ch) {
+    list.innerHTML = '<div class="empty-state">请从左侧选择一个章节进行编辑</div>';
+    addBtn.style.display = 'none';
+    document.getElementById('adminMainTitle').textContent = '选择章节';
+    return;
+  }
+  addBtn.style.display = 'inline-block';
+  document.getElementById('adminMainTitle').textContent = ch.title;
+  if (!ch.items.length) {
+    list.innerHTML = '<div class="empty-state">该章节暂无条目，点击右上角「新增条目」添加</div>';
+    return;
+  }
+  list.innerHTML = '';
+  ch.items.forEach((it, i) => {
+    const row = document.createElement('div');
+    row.className = 'admin-item-row';
+    const prev = (it.content||'').replace(/<[^>]+>/g,'').substring(0, 60);
+    row.innerHTML = `
+      <div class="info">
+        <div class="t">${i+1}. ${esc(it.title)}</div>
+        <div class="p">${esc(prev)}${prev.length>=60?'...':''}</div>
+      </div>
+      <div class="ops">
+        <button class="btn btn-sm" onclick="editItem('${it.id}')">编辑</button>
+        <button class="btn btn-sm btn-danger" onclick="delItem('${it.id}')">删除</button>
+      </div>
+    `;
+    list.appendChild(row);
+  });
+}
+
+// 章节编辑
+function editChapter(cid) {
+  const isNew = cid === -1;
+  const ch = isNew ? {title:''} : appData.chapters.find(c=>c.id===cid);
+  if (!ch) return;
+  document.getElementById('modalBox').innerHTML = `
+    <h3>${isNew?'新增章节':'编辑章节'}</h3>
+    <div class="f-group">
+      <label>章节标题</label>
+      <input type="text" id="fChTitle" value="${esc(ch.title)}" placeholder="例如：第四章 安全规范">
+    </div>
+    <div class="modal-btns">
+      <button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveChapter('${cid}')">保存</button>
+    </div>
+  `;
+  document.getElementById('modalMask').classList.add('active');
+}
+function saveChapter(cid) {
+  const t = document.getElementById('fChTitle').value.trim();
+  if (!t) { toast('请输入章节标题'); return; }
+  if (cid === -1) appData.chapters.push({id: genId(), title: t, items: []});
+  else { const ch = appData.chapters.find(c=>c.id===cid); if (ch) ch.title = t; }
+  markDirty(); closeModal(); renderAdminChs(); renderNav(); renderDoc();
+  toast('章节已修改，记得点保存');
+}
+function delChapter(cid) {
+  if (!confirm('确定删除这个章节及其所有条目吗？')) return;
+  appData.chapters = appData.chapters.filter(c=>c.id!==cid);
+  if (curChId === cid) { curChId = null; renderAdminItems(); }
+  markDirty(); renderAdminChs(); renderNav(); renderDoc();
+  toast('章节已删除，记得点保存');
+}
+
+// 条目编辑
+function editItem(iid) {
+  const ch = appData.chapters.find(c=>c.id===curChId);
+  if (!ch) return;
+  const isNew = iid === -1;
+  const it = isNew ? {title:'',content:'',tags:[],level:'normal'} : ch.items.find(i=>i.id===iid);
+  if (!it) return;
+  document.getElementById('modalBox').innerHTML = `
+    <h3>${isNew?'新增条目':'编辑条目'}</h3>
+    <div class="f-group">
+      <label>条目标题</label>
+      <input type="text" id="fItTitle" value="${esc(it.title)}" placeholder="条目标题">
+    </div>
+    <div class="f-group">
+      <label>正文（支持 HTML 标签，可插入图片和附件）</label>
+      <textarea id="fItContent" rows="8">${esc(it.content||'')}</textarea>
+    </div>
+    <div class="f-group">
+      <label>插入附件（图片自动显示，其他格式生成下载链接）</label>
+      <button type="button" class="btn btn-sm" onclick="document.getElementById('fItFile').click()">📎 选择文件插入正文</button>
+      <input type="file" id="fItFile" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.pptx,.docx,.xlsx,.doc,.xls,.ppt" style="display:none" onchange="insertAttachmentIntoEditor(this)">
+      <div id="fItFileHint" style="font-size:12px;color:var(--t3);margin-top:4px;"></div>
+    </div>
+    <div class="f-row">
+      <div class="f-group">
+        <label>标签（逗号分隔）</label>
+        <input type="text" id="fItTags" value="${esc((it.tags||[]).join(', '))}" placeholder="安全, 流程">
+      </div>
+      <div class="f-group">
+        <label>重要程度</label>
+        <select id="fItLevel">
+          <option value="normal" ${it.level==='normal'?'selected':''}>普通</option>
+          <option value="important" ${it.level==='important'?'selected':''}>重要</option>
+          <option value="warning" ${it.level==='warning'?'selected':''}>注意</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveItem('${iid}')">保存</button>
+    </div>
+  `;
+  document.getElementById('modalMask').classList.add('active');
+}
+function saveItem(iid) {
+  const ch = appData.chapters.find(c=>c.id===curChId);
+  if (!ch) return;
+  const t = document.getElementById('fItTitle').value.trim();
+  if (!t) { toast('请输入条目标题'); return; }
+  const c = document.getElementById('fItContent').value;
+  const tags = document.getElementById('fItTags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean);
+  const lv = document.getElementById('fItLevel').value;
+  if (iid === -1) ch.items.push({id: genId(), title: t, content: c, tags, level: lv});
+  else { const it = ch.items.find(i=>i.id===iid); if (it) { it.title=t; it.content=c; it.tags=tags; it.level=lv; } }
+  markDirty(); closeModal(); renderAdminItems(); renderNav(); renderDoc();
+  toast('条目已修改，记得点保存');
+}
+function delItem(iid) {
+  if (!confirm('确定删除这个条目吗？')) return;
+  const ch = appData.chapters.find(c=>c.id===curChId);
+  if (!ch) return;
+  ch.items = ch.items.filter(i=>i.id!==iid);
+  markDirty(); renderAdminItems(); renderNav(); renderDoc();
+  toast('条目已删除，记得点保存');
+}
+
+// 设置
+function showSettings() {
+  document.getElementById('modalBox').innerHTML = `
+    <h3>全局设置</h3>
+    <div class="f-group">
+      <label>知识库名称</label>
+      <input type="text" id="sTitle" value="${esc(appData.bookTitle)}">
+    </div>
+    <div class="f-group">
+      <label>简介</label>
+      <textarea id="sDesc" rows="3">${esc(appData.bookDesc)}</textarea>
+    </div>
+    <div class="f-group">
+      <label>管理密码</label>
+      <input type="text" id="sPass" value="${esc(appData.adminPass)}">
+    </div>
+    <div style="border-top:1px solid var(--divider);margin:16px 0;padding-top:16px;">
+      <div style="font-size:14px;font-weight:600;margin-bottom:10px;">☁️ 云同步（多设备共享）</div>
+      <p style="font-size:12px;color:var(--t3);margin-bottom:12px;">在 Supabase 创建项目后，把 Project URL 和 Publishable Key 填进来，所有设备打开都读同一份数据。不填则仅保存在本地浏览器。</p>
+      <div class="f-group">
+        <label>Supabase Project URL</label>
+        <input type="text" id="sCloudUrl" value="${esc(cloudConfig.url)}" placeholder="https://xxxx.supabase.co">
+      </div>
+      <div class="f-group">
+        <label>Supabase Publishable Key</label>
+        <input type="text" id="sCloudAnonKey" value="${esc(cloudConfig.anonKey)}" placeholder="sb_publishable_...">
+      </div>
+      <div style="font-size:12px;color:var(--t3);">
+        当前状态：<span id="cloudStatus">${cloudReady ? '✅ 已连接' : '未配置（仅本地）'}</span>
+        <br>注意：需要在 Supabase 控制台先建一张表 <code>knowledge_base</code>，字段 <code>id(int)</code> 和 <code>data(jsonb)</code>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveSettings()">保存</button>
+    </div>
+  `;
+  document.getElementById('modalMask').classList.add('active');
+}
+function saveSettings() {
+  appData.bookTitle = document.getElementById('sTitle').value.trim() || '内部知识库';
+  appData.bookDesc = document.getElementById('sDesc').value;
+  const p = document.getElementById('sPass').value.trim();
+  if (p) appData.adminPass = p;
+  // 保存云配置
+  const curl = document.getElementById('sCloudUrl').value.trim();
+  const ckey = document.getElementById('sCloudAnonKey').value.trim();
+  if (curl !== cloudConfig.url || ckey !== cloudConfig.anonKey) {
+    cloudConfig.url = curl;
+    cloudConfig.anonKey = ckey;
+    saveCloudConfig();
+    if (initCloud()) {
+      toast('云同步已开启，点保存修改即可上传数据');
+    }
+  }
+  markDirty(); closeModal(); renderNav(); renderDoc();
+  toast('设置已修改，记得点保存');
+}
+
+// 导入导出
+function exportData() {
+  const blob = new Blob([JSON.stringify(appData, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '知识库数据_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('数据已导出');
+}
+function importData(ev) {
+  const f = ev.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = e => {
+    try {
+      const d = JSON.parse(e.target.result);
+      if (!d.chapters) throw 0;
+      appData = d; appData.updatedAt = new Date().toISOString(); save(); curChId = null;
+      renderAdminChs(); renderAdminItems(); renderNav(); renderDoc();
+      toast('导入成功');
+    } catch(_) { toast('导入失败：格式不正确'); }
+  };
+  r.readAsText(f, 'utf-8');
+  ev.target.value = '';
+}
+
+function insertAttachmentIntoEditor(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const hint = document.getElementById('fItFileHint');
+  hint.textContent = '正在插入：' + file.name + ' ...';
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const dataUrl = e.target.result;
+    const name = file.name;
+    const ext = name.split('.').pop().toLowerCase();
+    const isImage = ['png','jpg','jpeg','gif','webp'].includes(ext);
+    let insertHtml = '';
+    if (isImage) {
+      insertHtml = '<p><img src="' + dataUrl + '" alt="' + name + '" style="max-width:100%;border-radius:8px;margin:8px 0;"></p>';
+    } else {
+      const sizeKb = Math.round(file.size / 1024);
+      const sizeText = sizeKb > 1024 ? (sizeKb/1024).toFixed(1) + ' MB' : sizeKb + ' KB';
+      insertHtml = '<p>📎 <a href="' + dataUrl + '" download="' + name + '">点击下载：' + name + '</a> <span style="color:var(--t3);font-size:12px;">（' + sizeText + '）</span></p>';
+    }
+    const ta = document.getElementById('fItContent');
+    const pos = ta.selectionStart || ta.value.length;
+    ta.value = ta.value.substring(0, pos) + insertHtml + ta.value.substring(pos);
+    hint.textContent = '已插入：' + name + '（保存后生效）';
+    input.value = '';
+  };
+  reader.readAsDataURL(file);
+}
+function closeModal() { document.getElementById('modalMask').classList.remove('active'); }
+document.getElementById('modalMask').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+// 初始化
+load();
+renderNav();
+renderDoc();
+</script>
+<script>
+/* ===== 知识库增强功能：保持原始离线数据及后台 CRUD，扩展读者端交互 ===== */
+(function () {
+  'use strict';
+  const FAVORITES_KEY = 'h5_kb_favorites_v1';
+  const kbState = { levels: new Set(), tags: new Set(), updatedDays: 0, favoritesOnly: false };
+  let kbFavorites = new Set();
+  let kbAllVisibleItems = [];
+  let kbScrollQueued = false;
+  let kbLastQuery = '';
+  const LEVEL_NAMES = { important: '重要', warning: '注意', normal: '普通' };
+  const ALLOWED_TAGS = new Set(['A','P','BR','HR','STRONG','B','EM','I','U','S','DEL','INS','H1','H2','H3','H4','H5','H6','UL','OL','LI','BLOCKQUOTE','PRE','CODE','TABLE','THEAD','TBODY','TFOOT','TR','TH','TD','DIV','SPAN','IMG','SUP','SUB','SMALL','DL','DT','DD']);
+  const DROP_TAGS = new Set(['SCRIPT','STYLE','IFRAME','OBJECT','EMBED','FORM','INPUT','BUTTON','SELECT','TEXTAREA','META','LINK','SVG','MATH','VIDEO','AUDIO','SOURCE','CANVAS']);
+
+  function kbEsc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function kbNormalizeLevel(level) {
+    return ['important','warning','normal'].includes(level) ? level : 'normal';
+  }
+  function kbDate(value) {
+    if (!value) return null;
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  function kbFormatDate(value) {
+    const d = kbDate(value);
+    if (!d) return '';
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  function kbMigrateData() {
+    if (!appData || typeof appData !== 'object') appData = sampleData();
+    if (!Array.isArray(appData.chapters)) appData.chapters = [];
+    if (!Array.isArray(appData.attachmentsMeta)) appData.attachmentsMeta = [];
+    if (!appData.bookTitle) appData.bookTitle = '内部知识库';
+    if (typeof appData.bookDesc !== 'string') appData.bookDesc = '在这里查看公司内部培训资料、操作规范和常见问题解答。';
+    if (!appData.adminPass) appData.adminPass = 'admin123';
+    const usedCh = new Set();
+    appData.chapters.forEach((ch, ci) => {
+      if (!ch || typeof ch !== 'object') return;
+      if (!ch.id || usedCh.has(String(ch.id))) ch.id = `ch_${Date.now().toString(36)}_${ci}`;
+      ch.id = String(ch.id); usedCh.add(ch.id);
+      ch.title = String(ch.title || `未命名章节 ${ci+1}`);
+      if (!Array.isArray(ch.items)) ch.items = [];
+      const usedItems = new Set();
+      ch.items.forEach((it, ii) => {
+        if (!it || typeof it !== 'object') return;
+        if (!it.id || usedItems.has(String(it.id))) it.id = `it_${Date.now().toString(36)}_${ci}_${ii}`;
+        it.id = String(it.id).replace(/[^a-zA-Z0-9_-]/g, '_'); usedItems.add(it.id);
+        it.title = String(it.title || `未命名条目 ${ii+1}`);
+        it.content = String(it.content || '');
+        it.tags = Array.isArray(it.tags) ? it.tags.map(t => String(t).trim()).filter(Boolean) : String(it.tags || '').split(/[,，]/).map(t => t.trim()).filter(Boolean);
+        it.level = kbNormalizeLevel(it.level);
+      });
+    });
+    try { localStorage.setItem(KEY, JSON.stringify(appData)); } catch (e) { /* 浏览器禁用本地存储时仍允许临时浏览 */ }
+  }
+  function kbSave() {
+    try { appData.updatedAt = new Date().toISOString(); save(); }
+    catch (e) { toast('保存失败：浏览器可能禁止本地存储，请先导出备份'); }
+  }
+  function kbLoadFavorites() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+      kbFavorites = new Set(Array.isArray(parsed) ? parsed.map(String) : []);
+    } catch (_) { kbFavorites = new Set(); }
+  }
+  function kbStoreFavorites() {
+    try { localStorage.setItem(FAVORITES_KEY, JSON.stringify([...kbFavorites])); }
+    catch (_) { toast('收藏未能保存：浏览器可能禁止本地存储'); }
+  }
+  function kbSanitizeHTML(html) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(`<div>${String(html || '')}</div>`, 'text/html');
+    const root = doc.body.firstElementChild;
+    if (!root) return '';
+    function visit(parent) {
+      [...parent.children].forEach(el => {
+        const tag = el.tagName;
+        if (DROP_TAGS.has(tag)) { el.remove(); return; }
+        if (!ALLOWED_TAGS.has(tag)) {
+          visit(el);
+          const frag = doc.createDocumentFragment();
+          while (el.firstChild) frag.appendChild(el.firstChild);
+          el.replaceWith(frag);
+          return;
+        }
+        [...el.attributes].forEach(attr => {
+          const n = attr.name.toLowerCase(), v = attr.value.trim();
+          const keepBasic = ['title','colspan','rowspan','scope','alt','width','height','loading'].includes(n);
+          if (n === 'href' && tag === 'A') {
+            const safe = /^(https?:|mailto:|#item-[a-zA-Z0-9_-]+$|#sec-[a-zA-Z0-9_-]+$|#attachment-[a-zA-Z0-9_-]+$)/i.test(v);
+            if (!safe) el.removeAttribute(attr.name);
+          } else if (n === 'src' && tag === 'IMG') {
+            const safe = /^(https?:\/\/|data:image\/(png|jpeg|jpg|gif|webp);base64,|attachment:\/\/[a-zA-Z0-9_-]+$)/i.test(v);
+            if (!safe) el.removeAttribute(attr.name);
+          } else if (n === 'target' && tag === 'A') {
+            if (v !== '_blank' && v !== '_self') el.removeAttribute(attr.name);
+          } else if ((n === 'data-kb-attachment' || n === 'data-kb-attachment-image') && /^[a-zA-Z0-9_-]{1,160}$/.test(v)) {
+            /* controlled local attachment reference */
+          } else if (n === 'class' && !/^([\w -]{1,100})$/.test(v)) {
+            el.removeAttribute(attr.name);
+          } else if (!(keepBasic || n === 'href' && tag === 'A' || n === 'src' && tag === 'IMG' || n === 'target' && tag === 'A' || n === 'class' || n === 'data-kb-attachment' || n === 'data-kb-attachment-image')) {
+            el.removeAttribute(attr.name);
+          }
+        });
+        if (tag === 'A' && el.getAttribute('target') === '_blank') el.setAttribute('rel', 'noopener noreferrer');
+        visit(el);
+      });
+    }
+    visit(root);
+    return root.innerHTML;
+  }
+  function kbPlainText(html) {
+    const d = new DOMParser().parseFromString(kbSanitizeHTML(html), 'text/html');
+    return (d.body.textContent || '').replace(/\s+/g, ' ').trim();
+  }
+  function kbTerms() {
+    return String(searchQ || '').toLocaleLowerCase().split(/\s+/).map(s => s.trim()).filter(Boolean);
+  }
+  function kbHighlight(root, terms) {
+    if (!root || !terms.length) return;
+    const escaped = [...terms].sort((a,b) => b.length-a.length).map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    if (!escaped.length) return;
+    const re = new RegExp(escaped.join('|'), 'gi');
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        if (node.parentElement && node.parentElement.closest('script,style,mark,button,a.kb-fav')) return NodeFilter.FILTER_REJECT;
+        re.lastIndex = 0;
+        return re.test(node.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      }
+    });
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(node => {
+      const text = node.nodeValue, frag = document.createDocumentFragment();
+      let last = 0; re.lastIndex = 0; let m;
+      while ((m = re.exec(text))) {
+        if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+        const mark = document.createElement('mark'); mark.className = 'kb-hit'; mark.textContent = m[0]; frag.appendChild(mark);
+        last = m.index + m[0].length;
+        if (!m[0].length) re.lastIndex++;
+      }
+      if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+      node.replaceWith(frag);
+    });
+  }
+  function kbMatches(ch, it, terms) {
+    const level = kbNormalizeLevel(it.level);
+    if (kbState.levels.size && !kbState.levels.has(level)) return false;
+    if (kbState.tags.size && !(it.tags || []).some(t => kbState.tags.has(String(t)))) return false;
+    if (kbState.updatedDays) {
+      const date = kbDate(it.updatedAt);
+      if (!date) return false;
+      const age = (Date.now() - date.getTime()) / 86400000;
+      if (age < -1 || age > kbState.updatedDays) return false;
+    }
+    if (kbState.favoritesOnly && !kbFavorites.has(String(it.id))) return false;
+    if (terms.length) {
+      const hay = `${ch.title} ${it.title} ${kbPlainText(it.content)} ${(it.tags || []).join(' ')}`.toLocaleLowerCase();
+      if (!terms.every(t => hay.includes(t))) return false;
+    }
+    return true;
+  }
+  function kbRenderFilters() {
+    const tagsBox = document.getElementById('kbTagFilters');
+    if (!tagsBox) return;
+    const counts = new Map();
+    appData.chapters.forEach(ch => (ch.items || []).forEach(it => (it.tags || []).forEach(t => counts.set(String(t), (counts.get(String(t)) || 0) + 1))));
+    const tags = [...counts.keys()].sort((a,b) => a.localeCompare(b, 'zh-CN'));
+    tagsBox.innerHTML = tags.length ? tags.map(tag => `<button type="button" class="chip" data-kb-tag="${kbEsc(tag)}" aria-pressed="${kbState.tags.has(tag)}" title="${counts.get(tag)} 条">${kbEsc(tag)} <span style="opacity:.55;font-size:11px">${counts.get(tag)}</span></button>`).join('') : '<span class="kb-filter-hint">暂无标签，可在后台编辑条目添加。</span>';
+    document.querySelectorAll('[data-kb-level]').forEach(btn => btn.setAttribute('aria-pressed', String(kbState.levels.has(btn.dataset.kbLevel))));
+    document.querySelectorAll('[data-kb-days]').forEach(btn => btn.setAttribute('aria-pressed', String(Number(btn.dataset.kbDays) === kbState.updatedDays)));
+    const fav = document.getElementById('kbFavoritesOnly'); if (fav) fav.checked = kbState.favoritesOnly;
+  }
+  function kbTotalCount() { return appData.chapters.reduce((n, ch) => n + ((ch.items || []).length), 0); }
+  function renderNav() {
+    const box = document.getElementById('navList');
+    if (!box) return;
+    box.innerHTML = '';
+    const total = kbTotalCount();
+    const all = document.createElement('button');
+    all.type = 'button'; all.className = 'chapter-row all' + (!curChId ? ' active' : '');
+    all.innerHTML = `<span class="ch-title">全部章节</span><span class="ch-count">${total}</span>`;
+    all.addEventListener('click', () => { curChId = null; openChId = null; renderNav(); renderDoc(); kbUpdateURL(); if (innerWidth <= 768) toggleSidebar(false); });
+    box.appendChild(all);
+    appData.chapters.forEach((ch, idx) => {
+      const isOpen = openChId === ch.id || (!openChId && (curChId === ch.id || (!curChId && window.kbReadingChId === ch.id)));
+      const block = document.createElement('div');
+      block.className = 'chapter-block' + (isOpen ? ' open' : '');
+      block.dataset.chapterBlock = ch.id;
+      block.innerHTML = `
+        <button type="button" class="chapter-row ${curChId === ch.id || (!curChId && window.kbReadingChId === ch.id) ? 'active' : ''}" data-ch="${kbEsc(ch.id)}" aria-expanded="${isOpen}">
+          <span class="ch-num">${idx+1}</span><span class="ch-title">${kbEsc(ch.title)}</span>
+          <span class="ch-count">${(ch.items || []).length}</span><span class="fold-arrow">▸</span>
+        </button>
+        <div class="sub-toc">
+          ${(ch.items || []).map((it, ii) => `<a href="#item-${kbEsc(it.id)}" data-item="${kbEsc(it.id)}" data-ch="${kbEsc(ch.id)}" title="${kbEsc(it.title)}"><span class="num">${ii+1}</span><span class="label">${kbEsc(it.title)}</span></a>`).join('')}
+        </div>`;
+      box.appendChild(block);
+      const row = block.querySelector('.chapter-row');
+      row.addEventListener('click', () => {
+        if (curChId === ch.id && openChId === ch.id) openChId = null;
+        else openChId = ch.id;
+        curChId = ch.id;
+        renderNav(); renderDoc(); kbUpdateURL();
+        if (innerWidth <= 768) toggleSidebar(false);
+      });
+      block.querySelectorAll('a[data-item]').forEach(a => a.addEventListener('click', ev => {
+        ev.preventDefault(); kbGotoItem(a.dataset.item, a.dataset.ch, true);
+        if (innerWidth <= 768) toggleSidebar(false);
+      }));
+    });
+    kbRenderFilters();
+    kbSyncTocActive();
+  }
+  function renderDoc() {
+    const body = document.getElementById('docBody');
+    if (!body) return;
+    body.innerHTML = '';
+    document.getElementById('brandName').textContent = appData.bookTitle;
+    document.getElementById('docTitle').textContent = appData.bookTitle;
+    document.getElementById('docDesc').textContent = appData.bookDesc;
+    document.title = appData.bookTitle;
+    const totalChapters = appData.chapters.length, totalItems = kbTotalCount();
+    const terms = kbTerms();
+    const chapters = curChId ? appData.chapters.filter(ch => ch.id === curChId) : appData.chapters;
+    let visibleCount = 0;
+    const visibleItems = [];
+    chapters.forEach(ch => {
+      const items = (ch.items || []).filter(it => kbMatches(ch, it, terms));
+      if (!items.length) return;
+      visibleCount += items.length;
+      const sec = document.createElement('section');
+      sec.className = 'sec-block'; sec.id = 'sec-' + ch.id; sec.dataset.chapter = ch.id;
+      sec.innerHTML = `<div class="sec-h"><h2>${kbEsc(ch.title)}</h2><span class="shown">${items.length} 条</span></div>`;
+      body.appendChild(sec);
+      items.forEach(it => {
+        visibleItems.push({ch, it});
+        const card = document.createElement('article');
+        card.className = 'card'; card.id = 'item-' + it.id; card.dataset.itemId = it.id; card.dataset.chapterId = ch.id;
+        const level = kbNormalizeLevel(it.level), favorite = kbFavorites.has(String(it.id));
+        const updateDate = kbFormatDate(it.updatedAt);
+        const content = kbSanitizeHTML(it.content || '');
+        const tags = (it.tags || []).map(t => `<button type="button" class="tag ${kbState.tags.has(String(t)) ? 'active' : ''}" data-kb-tag="${kbEsc(t)}" aria-pressed="${kbState.tags.has(String(t))}" title="按标签筛选：${kbEsc(t)}">${kbEsc(t)}</button>`).join('');
+        const levelLabel = level === 'normal' ? '' : `<span class="badge ${level}">${LEVEL_NAMES[level]}</span>`;
+        const dateBadge = updateDate ? `<span class="kb-date">更新于 ${updateDate}</span>` : '';
+        card.innerHTML = `
+          <div class="card-title kb-card-heading">
+            <span class="kb-title-text">${kbEsc(it.title)}</span>
+            ${levelLabel}
+            <a class="kb-anchor" href="#item-${kbEsc(it.id)}" aria-label="本条链接" title="本条链接">↗</a>
+            <button type="button" class="kb-fav ${favorite ? 'active' : ''}" data-kb-fav="${kbEsc(it.id)}" aria-label="${favorite ? '取消收藏' : '收藏条目'}" aria-pressed="${favorite}" title="${favorite ? '取消收藏' : '收藏条目'}">${favorite ? '★' : '☆'}</button>
+          </div>
+          <div class="kb-card-meta">${dateBadge}<span>${(it.tags || []).length ? `${(it.tags || []).length} 个标签` : '未设置标签'}</span></div>
+          <div class="card-body">${content}</div>
+          ${(it.tags || []).length ? `<div class="kb-tags">${tags}</div>` : ''}`;
+        sec.appendChild(card);
+        if (window.kbHydrateAttachments) window.kbHydrateAttachments(card);
+        if (terms.length) kbHighlight(card, terms);
+      });
+    });
+    kbAllVisibleItems = visibleItems;
+    const stat = document.getElementById('docStat');
+    stat.innerHTML = `共 <b>${totalChapters}</b> 个章节 · <b>${totalItems}</b> 条内容 · 当前显示 <b>${visibleCount}</b> 条`;
+    const sum = document.getElementById('kbFilterSummary');
+    if (sum) {
+      const pieces = [];
+      if (searchQ) pieces.push(`关键词：${searchQ}`);
+      if (curChId) { const c = appData.chapters.find(x => x.id === curChId); if (c) pieces.push(c.title); }
+      if (kbState.levels.size) pieces.push([...kbState.levels].map(x => LEVEL_NAMES[x]).join('、'));
+      if (kbState.tags.size) pieces.push(`标签：${[...kbState.tags].join('、')}`);
+      if (kbState.updatedDays) pieces.push(`${kbState.updatedDays} 天内更新`);
+      if (kbState.favoritesOnly) pieces.push('我的收藏');
+      sum.textContent = pieces.length ? `筛选中：${pieces.join(' · ')}（${visibleCount} 条）` : `显示全部条目（${visibleCount} 条）`;
+    }
+    if (!visibleCount) {
+      body.innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>没有找到匹配的内容</p><p style="font-size:13px;margin-top:5px">尝试更换关键词或清除部分筛选条件。</p><button type="button" class="kb-empty-action" id="kbEmptyReset">清空筛选</button></div>`;
+      const reset = document.getElementById('kbEmptyReset'); if (reset) reset.addEventListener('click', kbReset);
+    }
+    kbRenderFilters();
+    requestAnimationFrame(kbSyncTocActive);
+  }
+  function kbSyncTocActive() {
+    const links = document.querySelectorAll('#navList .sub-toc a');
+    links.forEach(a => a.classList.remove('on'));
+    const cards = [...document.querySelectorAll('#docBody .card')];
+    if (!cards.length) return;
+    let active = cards[0];
+    for (const c of cards) { if (c.getBoundingClientRect().top <= 220) active = c; else break; }
+    const id = active.dataset.itemId;
+    const link = [...links].find(a => a.dataset.item === id);
+    if (link) {
+      link.classList.add('on');
+      const block = link.closest('.chapter-block');
+      if (block && !curChId) {
+        document.querySelectorAll('#navList .chapter-block').forEach(b => b.classList.toggle('open', b === block));
+      }
+    }
+    const chId = active.dataset.chapterId;
+    window.kbReadingChId = chId;
+    document.querySelectorAll('#navList .chapter-row[data-ch]').forEach(row => {
+      row.classList.toggle('active', curChId ? row.dataset.ch === curChId : row.dataset.ch === chId);
+      row.setAttribute('aria-expanded', String(row.parentElement.classList.contains('open')));
+    });
+    const all = document.querySelector('#navList .chapter-row.all');
+    if (all) all.classList.toggle('active', !curChId);
+  }
+  function kbUpdateURL() {
+    const p = new URLSearchParams();
+    if (searchQ) p.set('q', searchQ);
+    if (curChId) p.set('ch', curChId);
+    if (kbState.levels.size) p.set('level', [...kbState.levels].join(','));
+    if (kbState.tags.size) p.set('tag', [...kbState.tags].join(','));
+    if (kbState.updatedDays) p.set('updated', String(kbState.updatedDays));
+    if (kbState.favoritesOnly) p.set('fav', '1');
+    const qs = p.toString();
+    const hash = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1))) ? location.hash : '';
+    try {
+      history.replaceState(history.state, '', `${location.pathname}${qs ? '?' + qs : ''}${hash}`);
+    } catch (_) { /* file:// 环境下部分浏览器不允许更新地址栏，页面本身仍可正常使用 */ }
+  }
+  function kbReadURL() {
+    try {
+      const p = new URLSearchParams(location.search);
+      searchQ = p.get('q') || '';
+      const cid = p.get('ch'); curChId = appData.chapters.some(ch => ch.id === cid) ? cid : null;
+      kbState.levels = new Set((p.get('level') || '').split(',').filter(v => ['important','warning','normal'].includes(v)));
+      const allTags = new Set(appData.chapters.flatMap(ch => (ch.items || []).flatMap(it => it.tags || [])));
+      kbState.tags = new Set((p.get('tag') || '').split(',').filter(v => allTags.has(v)));
+      const days = Number(p.get('updated')); kbState.updatedDays = days === 7 || days === 30 ? days : 0;
+      kbState.favoritesOnly = p.get('fav') === '1';
+      const input = document.getElementById('searchInput'); if (input) input.value = searchQ;
+    } catch (_) {}
+  }
+  function kbReset() {
+    searchQ = '';
+    const input = document.getElementById('searchInput'); if (input) input.value = '';
+    curChId = null; openChId = null;
+    kbState.levels.clear(); kbState.tags.clear(); kbState.updatedDays = 0; kbState.favoritesOnly = false;
+    renderNav(); renderDoc(); kbUpdateURL();
+    if (document.getElementById('sidebar')?.classList.contains('open')) toggleSidebar(false);
+  }
+  function handleSearch() {
+    const input = document.getElementById('searchInput');
+    searchQ = input ? input.value.trim() : '';
+    renderDoc(); kbUpdateURL();
+  }
+  function kbGotoItem(iid, cid, clearFilters) {
+    const ch = appData.chapters.find(c => c.id === cid) || appData.chapters.find(c => (c.items || []).some(it => it.id === iid));
+    if (!ch) return;
+    if (clearFilters !== false) {
+      searchQ = ''; const input = document.getElementById('searchInput'); if (input) input.value = '';
+      kbState.levels.clear(); kbState.tags.clear(); kbState.updatedDays = 0; kbState.favoritesOnly = false;
+    }
+    curChId = ch.id; openChId = ch.id; window.kbReadingChId = ch.id;
+    renderNav(); renderDoc(); kbUpdateURL();
+    const targetId = 'item-' + iid;
+    const scrollToItem = (attempt) => {
+      let el = document.getElementById(targetId);
+      if (!el && attempt === 0) {
+        /* If legacy filters or a malformed deep link hid the target, clear them and render again. */
+        searchQ = ''; const input = document.getElementById('searchInput'); if (input) input.value = '';
+        kbState.levels.clear(); kbState.tags.clear(); kbState.updatedDays = 0; kbState.favoritesOnly = false;
+        curChId = ch.id; openChId = ch.id; renderNav(); renderDoc(); kbUpdateURL();
+        setTimeout(() => scrollToItem(1), 40); return;
+      }
+      if (el) {
+        el.scrollIntoView({behavior:'smooth', block:'start'});
+        el.classList.remove('highlight-target'); void el.offsetWidth; el.classList.add('highlight-target');
+        document.querySelectorAll('#navList .sub-toc a').forEach(a => a.classList.toggle('on', a.dataset.item === String(iid)));
+        try { history.replaceState(history.state, '', `${location.pathname}${location.search}#${targetId}`); } catch (_) {}
+      } else toast('未找到该条目，请检查内容是否已删除');
+    };
+    setTimeout(() => scrollToItem(0), 100);
+  }
+  function kbToggleFavorite(iid) {
+    const key = String(iid);
+    if (kbFavorites.has(key)) kbFavorites.delete(key); else kbFavorites.add(key);
+    kbStoreFavorites();
+    renderDoc();
+    if (kbState.favoritesOnly && !kbFavorites.has(key)) toast('已取消收藏，该条目已从当前结果中移除');
+  }
+  function kbWire() {
+    const sidebar = document.getElementById('sidebar');
+    const theme = document.getElementById('themeToggle');
+    function applyTheme(dark) {
+      document.documentElement.classList.toggle('dark', dark);
+      if (theme) { theme.textContent = dark ? '☀' : '☾'; theme.setAttribute('aria-pressed', String(dark)); theme.title = dark ? '切换浅色模式' : '切换深色模式'; }
+      try { localStorage.setItem('h5_kb_theme', dark ? 'dark' : 'light'); } catch (_) {}
+    }
+    let dark = false;
+    try { dark = localStorage.getItem('h5_kb_theme') === 'dark' || (!localStorage.getItem('h5_kb_theme') && matchMedia('(prefers-color-scheme: dark)').matches); } catch (_) {}
+    applyTheme(dark);
+    if (theme) theme.addEventListener('click', () => applyTheme(!document.documentElement.classList.contains('dark')));
+    const levels = document.getElementById('kbLevelFilters');
+    if (levels) levels.addEventListener('click', ev => {
+      const b = ev.target.closest('[data-kb-level]'); if (!b) return;
+      const v = b.dataset.kbLevel; kbState.levels.has(v) ? kbState.levels.delete(v) : kbState.levels.add(v);
+      renderDoc(); kbUpdateURL();
+    });
+    const update = document.getElementById('kbUpdateFilters');
+    if (update) update.addEventListener('click', ev => {
+      const b = ev.target.closest('[data-kb-days]'); if (!b) return;
+      const v = Number(b.dataset.kbDays); kbState.updatedDays = kbState.updatedDays === v ? 0 : v;
+      renderDoc(); kbUpdateURL();
+    });
+    const tags = document.getElementById('kbTagFilters');
+    if (tags) tags.addEventListener('click', ev => {
+      const b = ev.target.closest('[data-kb-tag]'); if (!b) return;
+      const v = b.dataset.kbTag; kbState.tags.has(v) ? kbState.tags.delete(v) : kbState.tags.add(v);
+      renderDoc(); kbUpdateURL();
+    });
+    const fav = document.getElementById('kbFavoritesOnly');
+    if (fav) fav.addEventListener('change', () => { kbState.favoritesOnly = fav.checked; renderDoc(); kbUpdateURL(); });
+    const reset = document.getElementById('kbResetFilters'); if (reset) reset.addEventListener('click', kbReset);
+    document.getElementById('docBody').addEventListener('click', ev => {
+      const attachment = ev.target.closest('[data-kb-attachment]');
+      if (attachment) { ev.preventDefault(); ev.stopPropagation(); if (window.kbOpenAttachment) window.kbOpenAttachment(attachment.dataset.kbAttachment); return; }
+      const attachmentImage = ev.target.closest('[data-kb-attachment-image]');
+      if (attachmentImage) { const id = attachmentImage.dataset.kbAttachmentImage; if (window.kbOpenAttachment) { ev.preventDefault(); window.kbOpenAttachment(id); } return; }
+      const star = ev.target.closest('[data-kb-fav]');
+      if (star) { kbToggleFavorite(star.dataset.kbFav); return; }
+      const tag = ev.target.closest('[data-kb-tag]');
+      if (tag && tag.classList.contains('tag')) {
+        const v = tag.dataset.kbTag; kbState.tags.has(v) ? kbState.tags.delete(v) : kbState.tags.add(v);
+        renderDoc(); kbUpdateURL();
+        const panel = document.getElementById('kbFilterPanel'); if (panel) panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+        return;
+      }
+      const xref = ev.target.closest('a[href^="#item-"]');
+      if (xref) {
+        const id = decodeURIComponent(xref.getAttribute('href').slice('#item-'.length));
+        const target = document.getElementById('item-' + id);
+        if (!target) {
+          ev.preventDefault();
+          const item = appData.chapters.flatMap(ch => (ch.items || []).map(it => ({ch,it}))).find(x => x.it.id === id);
+          if (item) kbGotoItem(item.it.id, item.ch.id, true);
+        }
+      }
+    });
+    document.addEventListener('keydown', ev => {
+      const target = ev.target;
+      if (ev.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(target.tagName) && !target.isContentEditable) {
+        ev.preventDefault(); const input = document.getElementById('searchInput'); if (input) { input.focus(); input.select(); }
+      } else if (ev.key === 'Escape') {
+        if (document.activeElement && document.activeElement.id === 'searchInput') document.activeElement.blur();
+        if (sidebar && sidebar.classList.contains('open')) toggleSidebar(false);
+      }
+    });
+    window.addEventListener('scroll', () => {
+      if (kbScrollQueued) return; kbScrollQueued = true;
+      requestAnimationFrame(() => { kbScrollQueued = false; kbSyncTocActive(); });
+    }, {passive:true});
+    window.addEventListener('popstate', () => { kbReadURL(); renderNav(); renderDoc(); });
+    window.addEventListener('hashchange', () => {
+      const id = decodeURIComponent(location.hash.slice(1));
+      if (!id.startsWith('item-')) return;
+      const iid = id.slice(5);
+      const target = document.getElementById(id);
+      if (target) target.scrollIntoView({behavior:'smooth',block:'start'});
+      else {
+        const found = appData.chapters.flatMap(ch => (ch.items || []).map(it => ({ch,it}))).find(x => x.it.id === iid);
+        if (found) kbGotoItem(found.it.id, found.ch.id, true);
+      }
+    });
+  }
+
+  /* 让新增/编辑条目自动记录本地更新时间，供“最近更新”筛选使用。 */
+  saveItem = function (iid) {
+    const ch = appData.chapters.find(c => c.id === curChId);
+    if (!ch) return;
+    const title = document.getElementById('fItTitle').value.trim();
+    if (!title) { toast('请输入条目标题'); return; }
+    const content = document.getElementById('fItContent').value;
+    const tags = document.getElementById('fItTags').value.split(/[,，]/).map(s => s.trim()).filter(Boolean);
+    const level = kbNormalizeLevel(document.getElementById('fItLevel').value);
+    const now = new Date().toISOString();
+    if (iid === -1 || iid === '-1') ch.items.push({id:genId(), title, content, tags, level, createdAt:now, updatedAt:now});
+    else {
+      const it = ch.items.find(i => i.id === iid);
+      if (it) { it.title = title; it.content = content; it.tags = tags; it.level = level; it.updatedAt = now; }
+    }
+    kbSave(); closeModal(); renderAdminItems(); renderAdminChs(); renderNav(); renderDoc(); toast('条目已保存');
+  };
+  /* 导入数据时校验结构并补齐旧版字段，兼容原有 JSON 备份。 */
+  importData = function (ev) {
+    const file = ev.target.files && ev.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const d = JSON.parse(e.target.result);
+        if (!d || !Array.isArray(d.chapters)) throw new Error('invalid');
+        appData = d; appData.updatedAt = new Date().toISOString(); kbMigrateData(); kbLoadFavorites(); curChId = null; openChId = null;
+        searchQ = ''; kbState.levels.clear(); kbState.tags.clear(); kbState.updatedDays = 0; kbState.favoritesOnly = false;
+        const searchInput = document.getElementById('searchInput'); if (searchInput) searchInput.value = '';
+        renderAdminChs(); renderAdminItems(); renderNav(); renderDoc(); toast('导入成功');
+      } catch (_) { toast('导入失败：请选择有效的知识库 JSON 备份'); }
+    };
+    reader.readAsText(file, 'utf-8'); ev.target.value = '';
+  };
+  /* 修复原版新建章节时数字 -1 与字符串 "-1" 比较导致无法保存的问题。 */
+  saveChapter = function (cid) {
+    const title = document.getElementById('fChTitle').value.trim();
+    if (!title) { toast('请输入章节标题'); return; }
+    const now = new Date().toISOString();
+    if (String(cid) === '-1') {
+      const ch = { id: genId(), title, items: [], createdAt: now, updatedAt: now };
+      appData.chapters.push(ch); curChId = ch.id; openChId = ch.id;
+    } else {
+      const ch = appData.chapters.find(c => c.id === cid);
+      if (ch) { ch.title = title; ch.updatedAt = now; }
+    }
+    kbSave(); closeModal(); renderAdminChs(); renderAdminItems(); renderNav(); renderDoc(); toast('章节已保存');
+  };
+  /* 密码在设置中不回显明文，留空则保持当前密码。 */
+  showSettings = function () {
+    document.getElementById('modalBox').innerHTML = `
+      <h3>全局设置</h3>
+      <div class="f-group"><label>知识库名称</label><input type="text" id="sTitle" value="${kbEsc(appData.bookTitle)}"></div>
+      <div class="f-group"><label>简介</label><textarea id="sDesc" rows="3">${kbEsc(appData.bookDesc)}</textarea></div>
+      <div class="f-group"><label>修改管理密码</label><input type="password" id="sPass" autocomplete="new-password" placeholder="留空则不修改"></div>
+      <div class="kb-filter-hint">首次使用默认管理密码：admin123。离线 HTML 的密码校验仅用于防止误操作，不等同于服务器端安全认证。</div>
+      <div style="border-top:1px solid var(--divider);margin:16px 0;padding-top:16px;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:10px;">☁️ 云同步（多设备共享）</div>
+        <p style="font-size:12px;color:var(--t3);margin-bottom:12px;">在 Supabase 创建项目后，把 Project URL 和 Publishable Key 填进来，所有设备打开都读同一份数据。不填则仅保存在本地浏览器。</p>
+        <div class="f-group"><label>Supabase Project URL</label><input type="text" id="sCloudUrl" value="${esc(cloudConfig.url)}" placeholder="https://xxxx.supabase.co"></div>
+        <div class="f-group"><label>Supabase Publishable Key</label><input type="text" id="sCloudAnonKey" value="${esc(cloudConfig.anonKey)}" placeholder="sb_publishable_..."></div>
+        <div class="kb-filter-hint">当前状态：${cloudReady ? '✅ 已连接' : '未配置（仅本地）'}<br>注意：需要在 Supabase 控制台先建一张表 knowledge_base，字段 id(int) 和 data(jsonb)</div>
+      </div>
+      <div class="modal-btns"><button class="btn" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveSettings()">保存</button></div>`;
+    document.getElementById('modalMask').classList.add('active');
+  };
+  /* 删除内容后同步筛选项与收藏集合。 */
+  delItem = function (iid) {
+    if (!confirm('确定删除这个条目吗？')) return;
+    const ch = appData.chapters.find(c => c.id === curChId); if (!ch) return;
+    ch.items = ch.items.filter(i => i.id !== iid); kbFavorites.delete(String(iid)); kbStoreFavorites();
+    kbSave(); renderAdminItems(); renderAdminChs(); renderNav(); renderDoc(); toast('条目已删除');
+  };
+
+  /* 覆盖旧版读者端渲染函数；后台沿用已有内容管理流程。 */
+  window.renderNav = renderNav;
+  window.renderDoc = renderDoc;
+  window.handleSearch = handleSearch;
+  window.copyToc = function () {
+    let text = `【${appData.bookTitle}】目录：\n\n`;
+    appData.chapters.forEach((ch, i) => { text += `${i+1}. ${ch.title}\n`; (ch.items || []).forEach((it, j) => { text += `   ${i+1}.${j+1} ${it.title}\n`; }); });
+    text += `\n请根据以上知识库目录，回答我的问题：`;
+    const fallback = () => { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); toast('目录已复制，去豆包粘贴提问吧'); } catch (_) { toast('复制失败，请手动选择目录文本'); } ta.remove(); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => toast('目录已复制，去豆包粘贴提问吧')).catch(fallback); else fallback();
+  };
+  exitAdmin = function () { document.getElementById('adminView').classList.remove('active'); document.getElementById('readerView').classList.remove('hidden'); renderNav(); renderDoc(); };
+
+  /* 将增强状态暴露给同一离线页面中的导入、导出和附件模块。 */
+  window.kbState = kbState;
+  window.kbGotoItem = kbGotoItem;
+  window.kbUpdateURL = kbUpdateURL;
+  window.kbRenderFilters = kbRenderFilters;
+  window.kbNormalizeLevel = kbNormalizeLevel;
+  window.kbEsc = kbEsc;
+  /* 初次载入：不改知识库内容，只补兼容字段、读取筛选地址和渲染增强界面。 */
+  kbMigrateData();
+  kbLoadFavorites();
+  kbReadURL();
+  kbWire();
+  renderNav();
+  renderDoc();
+  if (typeof renderAdminChs === 'function') renderAdminChs();
+  if (location.hash && location.hash.startsWith('#item-')) {
+    const id = decodeURIComponent(location.hash.slice('#item-'.length));
+    setTimeout(() => {
+      let el = document.getElementById('item-' + id);
+      if (!el) {
+        const found = appData.chapters.flatMap(ch => (ch.items || []).map(it => ({ch,it}))).find(x => x.it.id === id);
+        if (found) kbGotoItem(found.it.id, found.ch.id, true);
+      } else el.scrollIntoView({block:'start'});
+    }, 120);
+  }
+})();
+</script>
+
+<style>
+/* 管理后台在窄屏上使用真正可收缩的网格，避免编辑清单将页面撑宽。 */
+@media (max-width:768px) {
+  .admin-wrap { max-width:100%; width:100%; margin-left:0; margin-right:0; padding:16px; overflow:hidden; }
+  .admin-head { align-items:flex-start; flex-direction:column; gap:12px; }
+  .admin-head .actions { width:100%; display:flex; flex-wrap:wrap; gap:6px; }
+  .admin-grid { grid-template-columns:minmax(0,1fr)!important; min-width:0; width:100%; }
+  .admin-grid > *, .admin-side, .admin-main { min-width:0; width:100%; max-width:100%; }
+  .admin-side, .admin-main { padding:12px; }
+  .admin-ch-row, .admin-item-row { min-width:0; max-width:100%; }
+  .admin-item-row { flex-wrap:wrap; }
+  .admin-item-row .info { min-width:0; max-width:100%; }
+  .admin-item-row .info .p { white-space:normal; overflow-wrap:anywhere; }
+  .admin-main .main-head { min-width:0; flex-wrap:wrap; }
+  .admin-main .main-head h3 { min-width:0; overflow-wrap:anywhere; }
+  .admin-login-box { margin:32px auto; max-width:100%; }
+  .modal-box { padding:16px; }
+  .f-row { grid-template-columns:minmax(0,1fr); }
+}
+</style>
+<script>
+/* ===== 离线文件导入、附件存储、链接识别与多格式导出 ===== */
+(function(){
+  'use strict';
+  const DB_NAME = 'h5_kb_attachment_store_v1';
+  const DB_VERSION = 1;
+  let dbPromise = null;
+  const URL_OBJECTS = new Set();
+  const LEVEL_TEXT = {important:'重要', warning:'注意', normal:'普通'};
+
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function extension(name){ const m = String(name||'').toLowerCase().match(/\.([^.]+)$/); return m ? m[1] : ''; }
+  function formatSize(n){ if(n < 1024) return n+' B'; if(n < 1024*1024) return (n/1024).toFixed(1)+' KB'; return (n/1024/1024).toFixed(2)+' MB'; }
+  function idgen(){ return 'att_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,9); }
+  function toastMsg(m){ if (typeof toast === 'function') toast(m); else alert(m); }
+  function toDataURL(blob){ return new Promise((resolve,reject)=>{ const r=new FileReader(); r.onload=()=>resolve(String(r.result)); r.onerror=()=>reject(r.error||new Error('读取附件失败')); r.readAsDataURL(blob); }); }
+  function dataURLToBlob(url){ const parts=String(url).split(','); const mime=(parts[0].match(/data:([^;]+)/)||[])[1]||'application/octet-stream'; const binary=atob(parts[1]||''); const b=new Uint8Array(binary.length); for(let i=0;i<binary.length;i++) b[i]=binary.charCodeAt(i); return new Blob([b],{type:mime}); }
+  function openDB(){
+    if(dbPromise) return dbPromise;
+    dbPromise = new Promise((resolve,reject)=>{
+      if(!('indexedDB' in window)){ reject(new Error('当前浏览器不支持离线附件持久化')); return; }
+      const req=indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded=()=>{ const db=req.result; if(!db.objectStoreNames.contains('files')) db.createObjectStore('files',{keyPath:'id'}); };
+      req.onsuccess=()=>resolve(req.result); req.onerror=()=>reject(req.error||new Error('打开附件数据库失败'));
+    });
+    return dbPromise;
+  }
+  async function putAttachment(id,file,meta){
+    try {
+      const db=await openDB();
+      await new Promise((resolve,reject)=>{ const tx=db.transaction('files','readwrite'); tx.objectStore('files').put({id, name:meta.name, type:meta.type, size:meta.size, blob:file}); tx.oncomplete=resolve; tx.onerror=()=>reject(tx.error||new Error('附件保存失败')); tx.onabort=()=>reject(tx.error||new Error('附件保存已取消')); });
+    } catch (idbError) {
+      /* Some browser file:// contexts disable IndexedDB; fall back to a small embedded local attachment store. */
+      const total=(appData.attachmentsInline||[]).reduce((n,x)=>n+(x.size||0),0);
+      if(file.size>1200*1024 || total+file.size>2800*1024) throw new Error('此浏览器未开放离线附件数据库；单文件需小于 1.2 MB，附件总量需小于 2.8 MB。可改用 Chrome/Edge 打开，或先压缩文件。');
+      const dataUrl=await toDataURL(file);
+      if(!Array.isArray(appData.attachmentsInline))appData.attachmentsInline=[];
+      appData.attachmentsInline=appData.attachmentsInline.filter(x=>x.id!==id);
+      appData.attachmentsInline.push({id,name:meta.name,type:meta.type,size:meta.size,dataUrl});
+    }
+  }
+  async function getAttachment(id){
+    const embedded=window.__KB_EMBEDDED_ATTACHMENTS__;
+    if(embedded && embedded[id] && embedded[id].dataUrl){ const x=embedded[id]; return {id, name:x.name||id, type:x.type||'application/octet-stream', size:x.size||0, dataUrl:x.dataUrl, blob:dataURLToBlob(x.dataUrl)}; }
+    const inline=(appData.attachmentsInline||[]).find(x=>x.id===id);
+    if(inline && inline.dataUrl) return {id, name:inline.name||id, type:inline.type||'application/octet-stream', size:inline.size||0, dataUrl:inline.dataUrl, blob:dataURLToBlob(inline.dataUrl)};
+    try { const db=await openDB(); const item=await new Promise((resolve,reject)=>{ const tx=db.transaction('files','readonly'); const req=tx.objectStore('files').get(id); req.onsuccess=()=>resolve(req.result||null); req.onerror=()=>reject(req.error); }); if(item) return {...item, blob:item.blob, dataUrl:await toDataURL(item.blob)}; } catch(e) { console.warn('附件读取失败',e); }
+    const meta=(appData.attachmentsMeta||[]).find(x=>x.id===id);
+    if(meta) throw new Error('找不到附件「'+meta.name+'」。如果你从另一台设备导入了普通 JSON 备份，请重新导入原始文件，或使用包含附件的完整备份。');
+    throw new Error('附件不存在或已被删除');
+  }
+  async function deleteAttachment(id){
+    try { const db=await openDB(); await new Promise((resolve)=>{ const tx=db.transaction('files','readwrite'); tx.objectStore('files').delete(id); tx.oncomplete=resolve; tx.onerror=resolve; }); } catch(_){}
+    if(Array.isArray(appData.attachmentsInline)) appData.attachmentsInline=appData.attachmentsInline.filter(x=>x.id!==id);
+  }
+  async function removeUnusedAttachments(ids){
+    const refs=new Set(); (appData.chapters||[]).forEach(ch=>(ch.items||[]).forEach(it=>(it.attachments||[]).forEach(a=>refs.add(a.id))));
+    for(const id of ids){ if(!refs.has(id)){ await deleteAttachment(id); appData.attachmentsMeta=(appData.attachmentsMeta||[]).filter(x=>x.id!==id); } }
+  }
+  async function hydrateAttachments(root){
+    if(!root) return;
+    const images=[...root.querySelectorAll('img[data-kb-attachment-image]')];
+    for(const img of images){
+      const id=img.dataset.kbAttachmentImage; if(!id || img.dataset.kbHydrated==='1') continue;
+      img.dataset.kbHydrated='1';
+      try { const a=await getAttachment(id); if(img.isConnected) img.src=a.dataUrl; }
+      catch(e){ img.alt='附件未能载入'; img.title=e.message; }
+    }
+  }
+  async function openAttachment(id){
+    try{
+      const a=await getAttachment(id); const url=URL.createObjectURL(a.blob); URL_OBJECTS.add(url);
+      const ext=extension(a.name); const viewable=/^(pdf|png|jpe?g|gif|webp|svg|txt|html|htm)$/i.test(ext);
+      if(viewable){ const w=window.open(url,'_blank','noopener'); if(!w){ const link=document.createElement('a'); link.href=url; link.target='_blank'; link.rel='noopener'; link.click(); } setTimeout(()=>{ URL.revokeObjectURL(url); URL_OBJECTS.delete(url); }, 120000); }
+      else { const link=document.createElement('a'); link.href=url; link.download=a.name||'附件'; document.body.appendChild(link); link.click(); link.remove(); setTimeout(()=>{ URL.revokeObjectURL(url); URL_OBJECTS.delete(url); }, 60000); }
+    }catch(e){ toastMsg(e.message||'打开附件失败'); }
+  }
+  window.kbHydrateAttachments=hydrateAttachments;
+  window.kbOpenAttachment=openAttachment;
+
+  /* 纯前端 ZIP 读取器：用于 DOCX/XLSX/PPTX，支持 ZIP Store/Deflate 格式。 */
+  async function inflateRaw(bytes){
+    if(!('DecompressionStream' in window)) throw new Error('此浏览器缺少 ZIP 解压支持，请使用新版 Chrome、Edge 或 Safari。');
+    const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  }
+  async function zipEntries(file){
+    const bytes=new Uint8Array(await file.arrayBuffer()); const dv=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
+    let eocd=-1; const min=Math.max(0,bytes.length-65557);
+    for(let p=bytes.length-22;p>=min;p--){ if(dv.getUint32(p,true)===0x06054b50){eocd=p;break;} }
+    if(eocd<0) throw new Error('文件不是有效的 Office ZIP 文档，或文件已损坏。');
+    const count=dv.getUint16(eocd+10,true); let p=dv.getUint32(eocd+16,true); const entries=new Map();
+    for(let i=0;i<count;i++){
+      if(dv.getUint32(p,true)!==0x02014b50) throw new Error('无法读取 Office 文件目录。');
+      const method=dv.getUint16(p+10,true), csize=dv.getUint32(p+20,true), nlen=dv.getUint16(p+28,true), elen=dv.getUint16(p+30,true), clen=dv.getUint16(p+32,true), loff=dv.getUint32(p+42,true);
+      const name=new TextDecoder().decode(bytes.subarray(p+46,p+46+nlen)); p+=46+nlen+elen+clen;
+      entries.set(name,{method,csize,loff});
+    }
+    async function read(name){
+      const ent=entries.get(name); if(!ent) return null;
+      const lp=ent.loff; if(dv.getUint32(lp,true)!==0x04034b50) throw new Error('Office 文件中的数据块损坏。');
+      const nl=dv.getUint16(lp+26,true), el=dv.getUint16(lp+28,true), start=lp+30+nl+el, comp=bytes.subarray(start,start+ent.csize);
+      if(ent.method===0) return comp.slice(); if(ent.method===8) return await inflateRaw(comp); throw new Error('不支持此 ZIP 压缩方式。');
+    }
+    return {names:[...entries.keys()],read};
+  }
+  function xmlDoc(bytes){ return new DOMParser().parseFromString(new TextDecoder('utf-8').decode(bytes),'application/xml'); }
+  function xmlTexts(parent, tagName){ return [...parent.getElementsByTagName(tagName)].map(n=>n.textContent||'').join(''); }
+  async function parseDocx(file){
+    const z=await zipEntries(file), b=await z.read('word/document.xml'); if(!b) return '';
+    const d=xmlDoc(b); const paras=[...d.getElementsByTagName('w:p')].map(p=>xmlTexts(p,'w:t').replace(/\u00a0/g,' ')).filter(s=>s.trim());
+    return paras.join('\n');
+  }
+  async function parsePptx(file){
+    const z=await zipEntries(file); const paths=z.names.filter(n=>/^ppt\/slides\/slide\d+\.xml$/.test(n)).sort((a,b)=>Number(a.match(/slide(\d+)/)[1])-Number(b.match(/slide(\d+)/)[1]));
+    const slides=[]; for(const p of paths){const b=await z.read(p); const d=xmlDoc(b); const vals=[...d.getElementsByTagName('a:t')].map(n=>n.textContent||'').filter(Boolean); if(vals.length) slides.push('幻灯片 '+p.match(/slide(\d+)/)[1]+'\n'+vals.join('\n'));}
+    return slides.join('\n\n');
+  }
+  async function parseXlsx(file){
+    const z=await zipEntries(file); let shared=[]; const sb=await z.read('xl/sharedStrings.xml');
+    if(sb){const sd=xmlDoc(sb); shared=[...sd.getElementsByTagName('si')].map(si=>xmlTexts(si,'t'));}
+    const paths=z.names.filter(n=>/^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort((a,b)=>Number(a.match(/sheet(\d+)/)[1])-Number(b.match(/sheet(\d+)/)[1]));
+    const result=[];
+    for(let k=0;k<paths.length;k++){
+      const b=await z.read(paths[k]); const d=xmlDoc(b); const rows=[...d.getElementsByTagName('row')]; const lines=[];
+      rows.forEach(row=>{const cells=[...row.children].filter(c=>c.localName==='c').map(c=>{const typ=c.getAttribute('t'); if(typ==='inlineStr') return xmlTexts(c,'t'); const v=c.getElementsByTagName('v')[0]?.textContent||''; if(typ==='s') return shared[Number(v)]||''; if(typ==='b') return v==='1'?'TRUE':'FALSE'; return v;}); if(cells.some(v=>String(v).trim())) lines.push(cells.join('\t'));});
+      if(lines.length) result.push('工作表 '+(k+1)+'\n'+lines.join('\n'));
+    }
+    return result.join('\n\n');
+  }
+  function decodePdfString(s){
+    return s.replace(/\\([nrtbf()\\])/g,(_,c)=>({'n':'\n','r':'\r','t':'\t','b':'\b','f':'\f','(':'(',')':')','\\':'\\'}[c]||c)).replace(/\\([0-7]{1,3})/g,(_,o)=>String.fromCharCode(parseInt(o,8)));
+  }
+  async function parsePdfBasic(file){
+    try{
+      const bytes=new Uint8Array(await file.arrayBuffer()); let raw='';
+      for(let i=0;i<bytes.length;i+=0x8000) raw+=String.fromCharCode(...bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
+      const chunks=[raw];
+      /* Best-effort text stream extraction for simple PDFs; scanned pages and custom font maps may not yield text. */
+      const re=/stream\r?\n([\s\S]*?)\r?\nendstream/g; let m;
+      while((m=re.exec(raw))){
+        const header=raw.slice(Math.max(0,m.index-400),m.index); if(!/\/FlateDecode/.test(header)) continue;
+        const start=m.index+m[0].indexOf(m[1]); const compressed=bytes.subarray(start,start+m[1].length);
+        try{ const stream=new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate')); const out=new Uint8Array(await new Response(stream).arrayBuffer()); let s=''; for(let j=0;j<out.length;j+=0x8000)s+=String.fromCharCode(...out.subarray(j,Math.min(j+0x8000,out.length))); chunks.push(s); }catch(_){}
+      }
+      const all=chunks.join('\n'); const out=[]; const bt=/\bBT\b([\s\S]*?)\bET\b/g; let block;
+      while((block=bt.exec(all))){ const t=block[1]; const rx=/\(((?:\\.|[^\\)])*)\)\s*Tj|\[((?:.|\n)*?)\]\s*TJ|<([0-9a-fA-F]{4,})>\s*Tj/g; let q;
+        while((q=rx.exec(t))){ if(q[1]!=null) out.push(decodePdfString(q[1])); else if(q[2]!=null){const inner=q[2]; const rr=/\(((?:\\.|[^\\)])*)\)|<([0-9a-fA-F]{4,})>/g; let r; while((r=rr.exec(inner))) out.push(r[1]!=null?decodePdfString(r[1]):'');} else if(q[3]){ let s=''; const h=q[3]; for(let x=0;x+3<h.length;x+=4){ const c=parseInt(h.slice(x,x+4),16); if(c>=32&&c<127)s+=String.fromCharCode(c); } if(s)out.push(s); } }
+      }
+      return out.join(' ').replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,'').replace(/[ \t]+/g,' ').replace(/\s{3,}/g,'\n').trim();
+    }catch(_){return '';}
+  }
+  async function extractText(file, ext){
+    if(['txt','md','csv','json','xml'].includes(ext)){ return await file.text(); }
+    if(['html','htm'].includes(ext)){ const d=new DOMParser().parseFromString(await file.text(),'text/html'); return d.body.textContent||''; }
+    if(ext==='docx') return await parseDocx(file);
+    if(ext==='pptx') return await parsePptx(file);
+    if(ext==='xlsx') return await parseXlsx(file);
+    if(ext==='pdf') return await parsePdfBasic(file);
+    /* .doc/.xls are legacy binary formats. The original file is preserved as an attachment. */
+    return '';
+  }
+  function extLabel(ext){ return ({pdf:'PDF',docx:'Word',doc:'Word（旧版）',png:'图片',jpg:'图片',jpeg:'图片',xlsx:'Excel',xls:'Excel（旧版）',pptx:'PowerPoint',txt:'文本',md:'Markdown',csv:'CSV',html:'网页',htm:'网页'})[ext]||ext.toUpperCase()||'文件'; }
+  function autoLinkHTML(html){
+    const d=new DOMParser().parseFromString('<div id="kbAutolinkRoot">'+String(html||'')+'</div>','text/html'); const root=d.getElementById('kbAutolinkRoot');
+    const walker=d.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode(n){ if(!n.nodeValue||!/(https?:\/\/|www\.)/i.test(n.nodeValue))return NodeFilter.FILTER_REJECT; if(n.parentElement&&n.parentElement.closest('a,script,style,textarea'))return NodeFilter.FILTER_REJECT; return NodeFilter.FILTER_ACCEPT; }});
+    const nodes=[]; while(walker.nextNode())nodes.push(walker.currentNode);
+    const re=/(https?:\/\/[^\s<>"'“”‘’]+|www\.[^\s<>"'“”‘’]+)/ig;
+    nodes.forEach(n=>{const text=n.nodeValue, frag=d.createDocumentFragment(); let last=0,m; re.lastIndex=0; while((m=re.exec(text))){let u=m[0], trim=''; while(/[.,，。！？；：、)\]}]$/.test(u)){trim=u.slice(-1)+trim;u=u.slice(0,-1);} if(!u)continue; if(m.index>last)frag.appendChild(d.createTextNode(text.slice(last,m.index))); const a=d.createElement('a');a.href=/^https?:/i.test(u)?u:'https://'+u;a.target='_blank';a.rel='noopener noreferrer';a.textContent=u;frag.appendChild(a); if(trim)frag.appendChild(d.createTextNode(trim));last=m.index+m[0].length;} if(last<text.length)frag.appendChild(d.createTextNode(text.slice(last))); if(last>0)n.replaceWith(frag);});
+    return root.innerHTML;
+  }
+  window.kbAutoLinkHTML=autoLinkHTML;
+
+  function localInputDate(v){ if(!v)return ''; const d=new Date(v); if(Number.isNaN(d.getTime()))return ''; const z=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`; }
+  window.editItem=function(iid){
+    const ch=appData.chapters.find(c=>c.id===curChId); if(!ch){toastMsg('请先在左侧选择一个章节');return;}
+    const isNew=String(iid)==='-1'; const it=isNew?{title:'',content:'',tags:[],level:'normal',updatedAt:''}:ch.items.find(i=>String(i.id)===String(iid)); if(!it)return;
+    document.getElementById('modalBox').innerHTML=`
+      <h3>${isNew?'新增条目':'编辑条目'}</h3>
+      <div class="f-group"><label>条目标题</label><input type="text" id="fItTitle" value="${esc(it.title)}" placeholder="条目标题"></div>
+      <div class="f-group"><label>正文（支持 HTML；普通网址会自动转换为可点击链接）</label><textarea id="fItContent" rows="9">${esc(it.content||'')}</textarea><div class="kb-filter-hint">可填写纯文本或 HTML。示例：https://example.com 会自动识别为超链接。</div></div>
+      <div class="f-row"><div class="f-group"><label>标签（逗号分隔）</label><input type="text" id="fItTags" value="${esc((it.tags||[]).join(', '))}" placeholder="安全, 流程"></div>
+      <div class="f-group"><label>重要程度</label><select id="fItLevel"><option value="normal" ${it.level==='normal'?'selected':''}>普通</option><option value="important" ${it.level==='important'?'selected':''}>重要</option><option value="warning" ${it.level==='warning'?'selected':''}>注意</option></select></div></div>
+      <div class="f-group"><label>最近更新时间（用于“最近更新”筛选）</label><input type="datetime-local" id="fItUpdated" value="${localInputDate(it.updatedAt)}"><div class="kb-filter-hint">手动选择日期可调整筛选结果；留空时，保存操作会自动记录当前时间。</div></div>
+      ${(it.attachments||[]).length?`<div class="f-group"><label>附件</label><div>${it.attachments.map(a=>`<div>📎 ${esc(a.name)}（${formatSize(a.size||0)}）</div>`).join('')}</div></div>`:''}
+      <div class="modal-btns"><button class="btn" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveItem('${esc(iid)}')">保存</button></div>`;
+    document.getElementById('modalMask').classList.add('active');
+  };
+  window.saveItem=function(iid){
+    const ch=appData.chapters.find(c=>c.id===curChId); if(!ch)return;
+    const title=document.getElementById('fItTitle').value.trim(); if(!title){toastMsg('请输入条目标题');return;}
+    const rawContent=document.getElementById('fItContent').value; const content=autoLinkHTML(rawContent);
+    const tags=[...new Set(document.getElementById('fItTags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean))];
+    const level=document.getElementById('fItLevel').value; const dateInput=document.getElementById('fItUpdated').value; const updatedAt=dateInput?new Date(dateInput).toISOString():new Date().toISOString(); const now=new Date().toISOString();
+    if(String(iid)==='-1')ch.items.push({id:genId(),title,content,tags,level,createdAt:now,updatedAt});
+    else { const it=ch.items.find(i=>String(i.id)===String(iid)); if(it){it.title=title;it.content=content;it.tags=tags;it.level=level;it.updatedAt=updatedAt;} }
+    try{appData.updatedAt=new Date().toISOString();save();}catch(e){toastMsg('保存失败：浏览器本地存储空间可能不足，请先导出数据');}
+    closeModal(); renderAdminItems(); renderAdminChs(); renderNav(); renderDoc(); toastMsg('条目已保存');
+  };
+
+  function fileContentHtml(meta, text, ext){
+    const link=`<a class="kb-att-link" href="#attachment-${esc(meta.id)}" data-kb-attachment="${esc(meta.id)}">打开/下载原始文件：${esc(meta.name)}</a>`;
+    if(['png','jpg','jpeg','gif','webp'].includes(ext)) return `<p class="kb-import-note">已导入图片附件：${esc(meta.name)}（${formatSize(meta.size)}）</p><p><img class="kb-attachment-preview" data-kb-attachment-image="${esc(meta.id)}" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="${esc(meta.name)}"></p><p>${link}</p>`;
+    const legacy=['doc','xls'].includes(ext);
+    const note = legacy ? '此文件为旧版二进制 Office 格式，已保留原始附件；当前离线解析器不保证能提取其正文，请下载后用办公软件打开。' : ext==='pdf'&&!text.trim() ? '文件已导入。未提取到可搜索文字（可能是扫描件或使用特殊字体编码）；可点击下方链接打开原始 PDF。' : '';
+    const body=text.trim()?`<div class="kb-import-extracted"><h4>提取内容</h4><pre>${esc(text.slice(0,600000))}${text.length>600000?'\n\n[正文过长，已截取前 600000 个字符]':''}</pre></div>`:'';
+    return `<p class="kb-import-note">文件类型：${extLabel(ext)} · 大小：${formatSize(meta.size)}${note?' · '+esc(note):''}</p><p>${link}</p>${body||(!note?'<p>原始文件已保存为附件，可点击链接打开或下载。</p>':'')}`;
+  }
+  async function importFiles(ev){
+    const input=ev.target; const files=[...(input.files||[])]; if(!files.length)return;
+    try{
+      if(!Array.isArray(appData.attachmentsMeta))appData.attachmentsMeta=[];
+      if(!Array.isArray(appData.chapters))appData.chapters=[];
+      let ch=appData.chapters.find(c=>c.id===curChId);
+      if(!ch){ ch={id:genId(),title:'导入资料',items:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}; appData.chapters.push(ch); curChId=ch.id; openChId=ch.id; }
+      const supported=new Set(['pdf','docx','doc','png','jpg','jpeg','xlsx','xls','pptx','txt','md','csv','html','htm','json','xml','gif','webp']);
+      const imported=[]; let failed=[];
+      for(let i=0;i<files.length;i++){
+        const f=files[i], ext=extension(f.name); if(!supported.has(ext)){failed.push(f.name+'（不支持的格式）');continue;}
+        if(f.size>100*1024*1024){failed.push(f.name+'（超过 100 MB）');continue;}
+        const id=idgen(); const meta={id,name:f.name,type:f.type||mimeByExt(ext),size:f.size,lastModified:f.lastModified||Date.now()};
+        try{
+          await putAttachment(id,f,meta);
+          let text='';
+          try{text=await extractText(f,ext);}catch(ex){console.warn('内容解析失败：'+f.name,ex);}
+          meta.extracted=!!String(text||'').trim();
+          const title=f.name.replace(/\.[^.]+$/,'')||f.name;
+          const tags=[extLabel(ext),({pdf:'PDF',docx:'Word',doc:'Word',xlsx:'Excel',xls:'Excel',pptx:'PPT',png:'图片',jpg:'图片',jpeg:'图片'})[ext]||'导入文件'];
+          const content=autoLinkHTML(fileContentHtml(meta,text,ext));
+          const now=new Date().toISOString();
+          ch.items.push({id:genId(),title,content,tags:[...new Set(tags)],level:'normal',createdAt:now,updatedAt:now,attachments:[{id:meta.id,name:meta.name,type:meta.type,size:meta.size}]});
+          appData.attachmentsMeta.push({id:meta.id,name:meta.name,type:meta.type,size:meta.size,lastModified:meta.lastModified});
+          imported.push(f.name);
+        }catch(ex){failed.push(f.name+'（'+(ex.message||'保存失败')+'）');}
+      }
+      appData.updatedAt=new Date().toISOString(); save(); renderAdminChs(); renderAdminItems(); renderNav(); renderDoc();
+      if(imported.length)toastMsg('已导入 '+imported.length+' 个文件：'+imported.slice(0,3).join('、')+(imported.length>3?' 等':'')+(failed.length?'；失败 '+failed.length+' 个':''));
+      if(failed.length)console.warn('未导入的文件：',failed);
+      if(!imported.length && failed.length)toastMsg('导入失败：'+failed.slice(0,2).join('；'));
+    }catch(e){console.error(e);toastMsg('导入失败：'+(e.message||'未知错误'));}
+    finally{input.value='';}
+  }
+  function mimeByExt(ext){return ({pdf:'application/pdf',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',doc:'application/msword',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',xls:'application/vnd.ms-excel',pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation',txt:'text/plain',csv:'text/csv',html:'text/html',htm:'text/html',md:'text/markdown'})[ext]||'application/octet-stream';}
+  window.kbImportFiles=importFiles;
+
+  /* Backup format includes attachment bytes so another device can restore the full offline knowledge base. */
+  async function readAllAttachmentData(){
+    const out={}; const metas=appData.attachmentsMeta||[];
+    for(const meta of metas){try{const a=await getAttachment(meta.id);out[meta.id]={id:meta.id,name:meta.name||a.name,type:meta.type||a.type,size:meta.size||a.size,dataUrl:a.dataUrl};}catch(e){console.warn('跳过不可用附件',meta.name,e.message);}}
+    return out;
+  }
+  window.exportData=async function(){
+    try{
+      const attachments=await readAllAttachmentData(); const cleanData=JSON.parse(JSON.stringify(appData)); delete cleanData.attachmentsInline; const packageData={format:'h5-kb-backup-with-attachments-v1',appData:cleanData,attachments};
+      const blob=new Blob([JSON.stringify(packageData,null,2)],{type:'application/json;charset=utf-8'}); downloadBlob(blob,'知识库完整备份_'+new Date().toISOString().slice(0,10)+'.json');
+      toastMsg('完整备份已导出（包含可读取的附件）');
+    }catch(e){toastMsg('导出失败：'+(e.message||'附件打包失败'));}
+  };
+  window.importData=function(ev){
+    const file=ev.target.files&&ev.target.files[0]; if(!file)return;
+    const r=new FileReader(); r.onload=async()=>{
+      try{
+        const d=JSON.parse(r.result); let incoming, attachments={};
+        if(d && d.format==='h5-kb-backup-with-attachments-v1' && d.appData){incoming=d.appData;attachments=d.attachments||{};}
+        else incoming=d;
+        if(!incoming||!Array.isArray(incoming.chapters))throw new Error('文件不是有效的知识库 JSON 备份');
+        appData=incoming; appData.updatedAt=new Date().toISOString(); if(!Array.isArray(appData.attachmentsMeta))appData.attachmentsMeta=[];
+        for(const [id,a] of Object.entries(attachments)){if(a&&a.dataUrl){const blob=dataURLToBlob(a.dataUrl);await putAttachment(id,blob,{name:a.name,type:a.type,size:a.size});}}
+        if(typeof kbMigrateData==='function'){} /* Migration in the main reader will run at load; normalize common fields here. */
+        save(); curChId=null; openChId=null; searchQ=''; const inp=document.getElementById('searchInput');if(inp)inp.value='';
+        if(window.kbState){window.kbState.levels.clear();window.kbState.tags.clear();window.kbState.updatedDays=0;window.kbState.favoritesOnly=false;}
+        renderAdminChs();renderAdminItems();renderNav();renderDoc();toastMsg('知识库导入成功'+(Object.keys(attachments).length?'（附件已恢复）':''));
+      }catch(e){toastMsg('导入失败：'+(e.message||'请选择有效的知识库 JSON 文件'));}
+      finally{ev.target.value='';}
+    }; r.onerror=()=>{toastMsg('读取备份失败');ev.target.value='';}; r.readAsText(file,'utf-8');
+  };
+  function downloadBlob(blob,name){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);}
+
+  function resolveHTMLForPrint(html, mode, pathMap){
+    const d=new DOMParser().parseFromString('<div>'+String(html||'')+'</div>','text/html');const root=d.body.firstElementChild;
+    const refs=[...root.querySelectorAll('[data-kb-attachment], [data-kb-attachment-image]')];
+    refs.forEach(el=>{const id=el.getAttribute('data-kb-attachment')||el.getAttribute('data-kb-attachment-image');if(!id)return;const meta=(appData.attachmentsMeta||[]).find(x=>x.id===id);const name=meta?meta.name:id;const ext=extension(name);const path=pathMap&&pathMap[id];
+      if(mode==='epub'){
+        if(path){if(el.tagName==='IMG')el.setAttribute('src',path);else el.setAttribute('href',path);}
+        else if(el.tagName==='IMG')el.replaceWith(d.createTextNode('[附件图片不可用：'+name+']'));
+        el.removeAttribute('data-kb-attachment');el.removeAttribute('data-kb-attachment-image');
+      }else{
+        if(el.tagName==='IMG'){
+          el.removeAttribute('data-kb-attachment-image');
+          const att=window.__KB_EXPORT_ATTACHMENT_CACHE__&&window.__KB_EXPORT_ATTACHMENT_CACHE__[id]; if(att&&att.dataUrl)el.setAttribute('src',att.dataUrl); else el.setAttribute('alt','附件图片：'+name);
+        }else{
+          el.removeAttribute('data-kb-attachment');el.removeAttribute('href');
+          const att=window.__KB_EXPORT_ATTACHMENT_CACHE__&&window.__KB_EXPORT_ATTACHMENT_CACHE__[id];
+          if(att&&att.dataUrl){const a=d.createElement('a');a.href=att.dataUrl;a.textContent='原始附件：'+name;a.setAttribute('download',name);el.replaceWith(a);}else el.textContent='原始附件：'+name+'（请在知识库中打开）';
+        }
+      }
+    });
+    return root.innerHTML.replace(/&nbsp;/g,'&#160;').replace(/&mdash;/g,'&#8212;').replace(/&ndash;/g,'&#8211;').replace(/&ldquo;/g,'&#8220;').replace(/&rdquo;/g,'&#8221;').replace(/&lsquo;/g,'&#8216;').replace(/&rsquo;/g,'&#8217;');
+  }
+  async function ensureExportAttachmentCache(){window.__KB_EXPORT_ATTACHMENT_CACHE__=await readAllAttachmentData();return window.__KB_EXPORT_ATTACHMENT_CACHE__;}
+
+  window.kbExportOfflineHTML=async function(){
+    try{
+      toastMsg('正在打包离线网页…'); const embedded=JSON.parse(JSON.stringify(appData)); delete embedded.attachmentsInline; const attachments=await readAllAttachmentData();
+      let html='<!DOCTYPE html>\n'+document.documentElement.outerHTML;
+      const token=Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);
+      html=html.replace("const KEY = 'h5_kb_data_v2';",`const KEY = 'h5_kb_embedded_${token}';`);
+      const dataSafe=JSON.stringify(embedded).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');
+      const attSafe=JSON.stringify(attachments).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');
+      const bootstrap=`<script>window.__KB_EMBEDDED_DATA__=${dataSafe};window.__KB_EMBEDDED_ATTACHMENTS__=${attSafe};<\/script>\n`;
+      const marker='<script>\n// ===== 数据 ====='; if(!html.includes(marker))throw new Error('找不到网页初始化位置，无法生成自包含文件');
+      html=html.replace(marker,bootstrap+marker);
+      downloadBlob(new Blob([html],{type:'text/html;charset=utf-8'}),'知识库离线网页_'+new Date().toISOString().slice(0,10)+'.html');
+      toastMsg('离线网页已导出，包含当前知识库数据和附件');
+    }catch(e){console.error(e);toastMsg('导出离线网页失败：'+(e.message||'未知错误'));}
+  };
+
+  window.kbExportPDF=async function(){
+    try{
+      await ensureExportAttachmentCache();
+      const old=document.getElementById('kbPrintExport');if(old)old.remove();
+      const box=document.createElement('div');box.id='kbPrintExport';
+      let html=`<h1>${esc(appData.bookTitle||'知识库')}</h1><p>${esc(appData.bookDesc||'')}</p><p>导出时间：${new Date().toLocaleString()}</p>`;
+      (appData.chapters||[]).forEach((ch,ci)=>{html+=`<h2>${ci+1}. ${esc(ch.title)}</h2>`;(ch.items||[]).forEach((it,ii)=>{html+=`<article><h3>${ci+1}.${ii+1} ${esc(it.title)}${it.level&&it.level!=='normal'?' · '+LEVEL_TEXT[it.level]:''}</h3><div>${resolveHTMLForPrint(it.content||'','print')}</div>${(it.tags||[]).length?`<p><small>标签：${(it.tags||[]).map(esc).join('、')}</small></p>`:''}</article>`;});});
+      box.innerHTML=html;document.body.appendChild(box);
+      const clean=()=>{if(box.isConnected)box.remove();window.removeEventListener('afterprint',clean);};window.addEventListener('afterprint',clean);setTimeout(()=>{try{window.print();}finally{setTimeout(clean,120000);}},100);
+      toastMsg('已打开打印窗口，请在打印目标中选择“另存为 PDF”。');
+    }catch(e){toastMsg('PDF 导出失败：'+(e.message||'未知错误'));}
+  };
+
+  function bytes(s){return s instanceof Uint8Array?s:new TextEncoder().encode(String(s));}
+  function crc32(data){let c=0xffffffff;for(let i=0;i<data.length;i++){c^=data[i];for(let k=0;k<8;k++)c=(c&1)?(c>>>1)^0xedb88320:c>>>1;}return (c^0xffffffff)>>>0;}
+  function zipStore(files){
+    let locals=[],centrals=[],offset=0;const now=new Date();const dosTime=(now.getHours()<<11)|(now.getMinutes()<<5)|(Math.floor(now.getSeconds()/2));const dosDate=((Math.max(1980,now.getFullYear())-1980)<<9)|((now.getMonth()+1)<<5)|now.getDate();
+    for(const f of files){const name=bytes(f.name),data=bytes(f.data),crc=crc32(data),local=new Uint8Array(30+name.length+data.length),v=new DataView(local.buffer);
+      v.setUint32(0,0x04034b50,true);v.setUint16(4,20,true);v.setUint16(6,0x0800,true);v.setUint16(8,0,true);v.setUint16(10,dosTime,true);v.setUint16(12,dosDate,true);v.setUint32(14,crc,true);v.setUint32(18,data.length,true);v.setUint32(22,data.length,true);v.setUint16(26,name.length,true);v.setUint16(28,0,true);local.set(name,30);local.set(data,30+name.length);locals.push(local);
+      const cent=new Uint8Array(46+name.length),cv=new DataView(cent.buffer);cv.setUint32(0,0x02014b50,true);cv.setUint16(4,20,true);cv.setUint16(6,20,true);cv.setUint16(8,0x0800,true);cv.setUint16(10,0,true);cv.setUint16(12,dosTime,true);cv.setUint16(14,dosDate,true);cv.setUint32(16,crc,true);cv.setUint32(20,data.length,true);cv.setUint32(24,data.length,true);cv.setUint16(28,name.length,true);cv.setUint16(30,0,true);cv.setUint16(32,0,true);cv.setUint16(34,0,true);cv.setUint16(36,0,true);cv.setUint32(38,0,true);cv.setUint32(42,offset,true);cent.set(name,46);centrals.push(cent);offset+=local.length;
+    }
+    const centralSize=centrals.reduce((n,x)=>n+x.length,0),end=new Uint8Array(22),ev=new DataView(end.buffer);ev.setUint32(0,0x06054b50,true);ev.setUint16(4,0,true);ev.setUint16(6,0,true);ev.setUint16(8,files.length,true);ev.setUint16(10,files.length,true);ev.setUint32(12,centralSize,true);ev.setUint32(16,offset,true);ev.setUint16(20,0,true);
+    const all=[...locals,...centrals,end],len=all.reduce((n,x)=>n+x.length,0),out=new Uint8Array(len);let p=0;for(const a of all){out.set(a,p);p+=a.length;}return out;
+  }
+  function mimeByName(name,type){if(type)return type;const e=extension(name);return ({png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',webp:'image/webp',svg:'image/svg+xml',pdf:'application/pdf',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xls:'application/vnd.ms-excel',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation',txt:'text/plain',csv:'text/csv'})[e]||'application/octet-stream';}
+  function xmlEsc(s){return esc(s).replace(/\r/g,'').replace(/\n/g,'&#10;');}
+  function toXhtmlFragment(html){return String(html||'').replace(/<br([^>]*)>/gi,'<br$1 />').replace(/<hr([^>]*)>/gi,'<hr$1 />').replace(/<img([^>]*?)(?<!\/)\s*>/gi,'<img$1 />').replace(/&nbsp;/g,'&#160;').replace(/&mdash;/g,'&#8212;').replace(/&ndash;/g,'&#8211;').replace(/&ldquo;/g,'&#8220;').replace(/&rdquo;/g,'&#8221;').replace(/&lsquo;/g,'&#8216;').replace(/&rsquo;/g,'&#8217;');}
+  window.kbExportEPUB=async function(){
+    try{
+      toastMsg('正在生成 EPUB 电子书…'); const attachmentCache=await ensureExportAttachmentCache(); const files=[{name:'mimetype',data:'application/epub+zip'}];
+      files.push({name:'META-INF/container.xml',data:'<?xml version="1.0" encoding="UTF-8"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>'});
+      files.push({name:'OEBPS/style.css',data:'body{font-family:serif;line-height:1.65;margin:5%;}h1,h2,h3{line-height:1.3;}h2{border-bottom:1px solid #aaa;padding-bottom:.3em;margin-top:2em;}article{margin:1.2em 0;padding:.8em;border:1px solid #ddd;page-break-inside:avoid;}img{max-width:100%;height:auto;}pre{white-space:pre-wrap;overflow-wrap:anywhere;}a{color:#23408f;} .kb-import-note{padding:.6em;background:#f1f4ff;}'});
+      const attachmentPaths={}; const manifest=[]; const spine=[];
+      for(const meta of (appData.attachmentsMeta||[])){
+        const a=attachmentCache[meta.id]; if(!a||!a.dataUrl)continue; const ext=extension(meta.name); const safePath='attachments/'+meta.id+(ext?'.'+ext:''); attachmentPaths[meta.id]=safePath;
+        const mime=mimeByName(meta.name,meta.type); manifest.push(`<item id="att_${esc(meta.id)}" href="${safePath}" media-type="${esc(mime)}"/>`);
+        const blob=dataURLToBlob(a.dataUrl); files.push({name:'OEBPS/'+safePath,data:new Uint8Array(await blob.arrayBuffer())});
+      }
+      files.push({name:'OEBPS/nav.xhtml',data:`<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="zh-CN" lang="zh-CN"><head><title>目录</title><link rel="stylesheet" type="text/css" href="style.css"/>
+</head><body><nav epub:type="toc" id="toc"><h1>目录</h1><ol>${(appData.chapters||[]).map((ch,i)=>`<li><a href="chapter${i+1}.xhtml">${xmlEsc(ch.title)}</a></li>`).join('')}</ol></nav></body></html>`});
+      for(let ci=0;ci<(appData.chapters||[]).length;ci++){
+        const ch=appData.chapters[ci];let body=`<h1>${xmlEsc(ch.title)}</h1>`;
+        for(let ii=0;ii<(ch.items||[]).length;ii++){
+          const it=ch.items[ii]; const rich=resolveHTMLForPrint(it.content||'','epub',attachmentPaths); body+=`<article><h2>${xmlEsc(it.title)}</h2>${it.level&&it.level!=='normal'?`<p><strong>重要程度：${xmlEsc(LEVEL_TEXT[it.level]||it.level)}</strong></p>`:''}<div>${toXhtmlFragment(rich)}</div>${(it.tags||[]).length?`<p><small>标签：${(it.tags||[]).map(xmlEsc).join('、')}</small></p>`:''}</article>`;
+        }
+        const chapterName=`chapter${ci+1}.xhtml`;manifest.push(`<item id="ch${ci+1}" href="${chapterName}" media-type="application/xhtml+xml"/>`);spine.push(`<itemref idref="ch${ci+1}"/>`);
+        files.push({name:'OEBPS/'+chapterName,data:`<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN" lang="zh-CN"><head><title>${xmlEsc(ch.title)}</title><link rel="stylesheet" type="text/css" href="style.css"/>
+</head><body>${body}</body></html>`});
+      }
+      const navItem='<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>';const cssItem='<item id="css" href="style.css" media-type="text/css"/>';
+      const opf=`<?xml version="1.0" encoding="UTF-8"?><package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bookid" xml:lang="zh-CN"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="bookid">urn:uuid:${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}</dc:identifier><dc:title>${xmlEsc(appData.bookTitle||'知识库')}</dc:title><dc:language>zh-CN</dc:language><dc:creator>离线知识库</dc:creator><meta property="dcterms:modified">${new Date().toISOString().replace(/\.\d{3}Z$/,'Z')}</meta></metadata><manifest>${navItem}${cssItem}${manifest.join('')}</manifest><spine>${spine.join('')}</spine></package>`;
+      files.push({name:'OEBPS/content.opf',data:opf});
+      const zip=zipStore(files);downloadBlob(new Blob([zip],{type:'application/epub+zip'}),'知识库_'+new Date().toISOString().slice(0,10)+'.epub');toastMsg('EPUB 电子书已导出');
+    }catch(e){console.error(e);toastMsg('EPUB 导出失败：'+(e.message||'未知错误'));}
+  };
+
+  /* The new page's file inputs use normal JSON backup and individual Office/PDF/image import. */
+  window.addEventListener('beforeunload',()=>{for(const url of URL_OBJECTS)URL.revokeObjectURL(url);});
+})();
+</script>
+
+
+<script>
+/* ===== WPS WebOffice 深度集成入口 =====
+ * 前端只保存非秘密配置。AppSecret/长期密钥必须留在服务端。
+ * 真正在线协作依赖 WPS WebOffice 应用、已部署的公网 HTTPS 回调/文件服务和 SDK。
+ */
+(function(){
+  const KEY='h5_kb_weboffice_config_v2';
+  let cfg={url:'',name:'WPS 在线文档',appId:'',fileId:'',officeType:'Writer',sdkUrl:'./web-office-sdk-solution.umd.js',tokenApi:''};
+  try{cfg=Object.assign(cfg,JSON.parse(localStorage.getItem(KEY)||'{}'));}catch(_){}
+  const statusEl=()=>document.getElementById('collabStatus');
+  const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function status(){const e=statusEl();if(!e)return;const ready=!!(cfg.appId&&cfg.fileId&&cfg.sdkUrl);e.textContent=ready?'WebOffice：已配置':'WPS 在线编辑';e.style.color=ready?'var(--green)':'var(--t2)';e.title=ready?'已填写 WebOffice 前端参数；是否可编辑仍取决于 WPS 应用及服务端回调配置':'配置 WPS WebOffice 深度集成参数';}
+  function persist(){localStorage.setItem(KEY,JSON.stringify(cfg));status();}
+  window.showWpsSettings=function(){
+    const box=document.getElementById('modalBox');
+    box.innerHTML=`<h3>WPS WebOffice 深度集成</h3>
+      <p style="font-size:13px;color:var(--t2);margin:-8px 0 14px">配置后可尝试在知识库页面内嵌入 WPS 在线文档编辑器。多人实时协同由 WPS WebOffice 服务提供。</p>
+      <div class="f-group"><label>文档名称</label><input id="wpsName" maxlength="120" value="${esc(cfg.name)}"></div>
+      <div class="f-group"><label>WPS AppID（公开应用标识，不是 AppSecret）</label><input id="wpsAppId" autocomplete="off" placeholder="填写 WPS 开放平台应用 AppID" value="${esc(cfg.appId)}"></div>
+      <div class="f-group"><label>文件 ID（由业务系统生成并在回调服务中维护）</label><input id="wpsFileId" autocomplete="off" placeholder="例如：KB_DOC_0001" value="${esc(cfg.fileId)}"></div>
+      <div class="f-group"><label>文档类型</label><select id="wpsOfficeType"><option value="Writer" ${cfg.officeType==='Writer'?'selected':''}>文字文档（Word）</option><option value="Spreadsheet" ${cfg.officeType==='Spreadsheet'?'selected':''}>电子表格（Excel）</option><option value="Presentation" ${cfg.officeType==='Presentation'?'selected':''}>演示文稿（PPT）</option><option value="PDF" ${cfg.officeType==='PDF'?'selected':''}>PDF（通常为预览）</option></select></div>
+      <div class="f-group"><label>WebOffice SDK 地址</label><input id="wpsSdkUrl" placeholder="./web-office-sdk-solution.umd.js 或 HTTPS 地址" value="${esc(cfg.sdkUrl)}"></div>
+      <div class="f-group"><label>服务端 Token 接口（可选，但推荐）</label><input id="wpsTokenApi" type="url" placeholder="https://你的域名/api/weboffice/token" value="${esc(cfg.tokenApi)}"></div>
+      <div class="f-group"><label>WPS 云文档共享链接（备用：在新页面打开）</label><input id="wpsUrl" type="url" placeholder="https://... WPS/金山文档共享链接" value="${esc(cfg.url)}"></div>
+      <div class="kb-filter-hint"><b>接入前置条件：</b>在 <a href="https://open.wps.cn/documents/app-integration-dev/docs-center/online-preview-edit/flow" target="_blank" rel="noopener">WPS 开放平台</a>创建 WebOffice 应用；部署公网 HTTPS 回调服务，完成文件信息、下载、权限校验和保存回调；按 WPS 文档下载并托管 SDK 文件。token 接口应返回 JSON，例如 {"token":"短期业务令牌","timeout":600000}。</div>
+      <div class="kb-filter-hint" style="color:var(--yellow)"><b>安全与限制：</b>不要把 AppSecret、长期 Token 或私钥写入此 HTML。此页面只负责加载前端 SDK；没有 WPS 应用、可访问的文件 ID 和完整服务端回调时，编辑器无法真正启动。离线 file:// 模式通常不适合 WebOffice 集成，建议通过 HTTPS 网站部署。</div>
+      <div class="modal-btns"><button class="btn" onclick="closeModal()">取消</button><button class="btn" onclick="clearWpsSettings()">清除配置</button><button class="btn btn-primary" onclick="saveWpsSettings()">保存配置</button><button class="btn btn-primary" onclick="launchWebOffice()">页面内启动编辑器</button><button class="btn" onclick="openWpsDoc()">打开共享链接</button></div>`;
+    document.getElementById('modalMask').classList.add('active');
+  };
+  window.saveWpsSettings=function(){
+    const get=id=>document.getElementById(id)?.value.trim()||'';
+    const next={name:get('wpsName')||'WPS 在线文档',appId:get('wpsAppId'),fileId:get('wpsFileId'),officeType:get('wpsOfficeType')||'Writer',sdkUrl:get('wpsSdkUrl')||'./web-office-sdk-solution.umd.js',tokenApi:get('wpsTokenApi'),url:get('wpsUrl')};
+    if(next.tokenApi&&!/^https:\/\//i.test(next.tokenApi)){toast('Token 接口地址必须使用 HTTPS');return;}
+    if(next.url&&!/^https:\/\//i.test(next.url)){toast('共享链接必须以 HTTPS 开头');return;}
+    if(next.sdkUrl&&!(/^(https:\/\/|\.\.?\/|\/)/i.test(next.sdkUrl))){toast('SDK 地址应为 HTTPS 地址或相对路径');return;}
+    cfg=next;persist();toast('WebOffice 配置已保存（尚未验证服务端接入）');
+  };
+  function readForm(){
+    const get=id=>document.getElementById(id)?.value.trim();
+    if(get('wpsAppId')!==undefined){cfg={name:get('wpsName')||'WPS 在线文档',appId:get('wpsAppId')||'',fileId:get('wpsFileId')||'',officeType:get('wpsOfficeType')||'Writer',sdkUrl:get('wpsSdkUrl')||'./web-office-sdk-solution.umd.js',tokenApi:get('wpsTokenApi')||'',url:get('wpsUrl')||''};persist();}
+  }
+  window.launchWebOffice=async function(){
+    readForm();
+    if(!cfg.appId||!cfg.fileId){toast('请先填写 WPS AppID 和文件 ID');return;}
+    if(location.protocol==='file:'){const go=confirm('当前网页通过 file:// 离线打开。WebOffice 通常需要 HTTPS 网站及公网回调服务，直接启动可能失败。仍要尝试吗？');if(!go)return;}
+    const box=document.getElementById('modalBox');
+    box.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><h3 style="margin:0">${esc(cfg.name||'WPS 在线文档')}</h3><p style="font-size:12px;color:var(--t2);margin:5px 0 10px">WPS WebOffice 在线编辑器 · 需要网络和已部署的服务端回调</p></div><button class="btn btn-sm" onclick="showWpsSettings()">编辑配置</button><button class="btn btn-sm" onclick="closeModal()">关闭</button></div><div id="wpsEditorStatus" class="kb-filter-hint">正在加载 WPS WebOffice SDK…</div><div id="wpsEditorMount" style="height:min(72vh,850px);min-height:420px;width:100%;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff"></div><p style="font-size:11px;color:var(--t2)">若无法加载，请核对 SDK 地址、AppID、fileId、应用审核状态和公网 HTTPS 回调服务。</p>`;
+    document.getElementById('modalMask').classList.add('active');
+    const setMsg=m=>{const e=document.getElementById('wpsEditorStatus');if(e)e.textContent=m;};
+    try{
+      await loadSdk(cfg.sdkUrl);
+      const SDK=window.WebOfficeSDK;
+      if(!SDK||typeof SDK.init!=='function')throw new Error('SDK 已加载，但未找到 WebOfficeSDK.init。请检查 SDK 文件是否为 WPS WebOffice 官方 UMD 版本。');
+      const opts={appId:cfg.appId,fileId:cfg.fileId,officeType:(SDK.OfficeType&&SDK.OfficeType[cfg.officeType])||cfg.officeType,mount:'#wpsEditorMount'};
+      if(cfg.tokenApi){
+        const resp=await fetch(cfg.tokenApi,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({fileId:cfg.fileId})});
+        if(!resp.ok)throw new Error('Token 接口请求失败：HTTP '+resp.status);
+        const data=await resp.json();
+        if(!data||!data.token)throw new Error('Token 接口未返回 token 字段');
+        opts.token={token:data.token,timeout:Number(data.timeout)||600000};
+        opts.refreshToken=async()=>{const r=await fetch(cfg.tokenApi,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({fileId:cfg.fileId})});if(!r.ok)throw new Error('Token 刷新失败');const d=await r.json();return {token:d.token,timeout:Number(d.timeout)||600000};};
+      }
+      window.__kbWebOfficeInstance=SDK.init(opts);
+      setMsg('已调用 WebOffice SDK 初始化。若编辑器仍未显示，请检查 WPS 控制台和服务端回调日志。');
+    }catch(e){console.error(e);setMsg('启动失败：'+(e.message||String(e)));}
+  };
+  function loadSdk(src){return new Promise((resolve,reject)=>{if(window.WebOfficeSDK){resolve();return;}let script=document.querySelector('script[data-kb-weboffice-sdk]');if(script){script.addEventListener('load',resolve,{once:true});script.addEventListener('error',()=>reject(new Error('SDK 脚本加载失败：'+src)),{once:true});return;}script=document.createElement('script');script.src=src;script.async=true;script.dataset.kbWebofficeSdk='1';script.onload=resolve;script.onerror=()=>reject(new Error('SDK 脚本加载失败：'+src+'。请下载官方 SDK 并正确配置地址。'));document.head.appendChild(script);});}
+  window.openWpsDoc=function(){readForm();if(!cfg.url){toast('请先填写 WPS 共享链接，或配置 AppID/fileId 启动内嵌编辑器');return;}let u;try{u=new URL(cfg.url);if(u.protocol!=='https:')throw new Error();}catch(_){toast('共享链接必须是有效的 HTTPS 地址');return;}const w=window.open(u.href,'_blank','noopener,noreferrer');if(!w)toast('浏览器阻止了新窗口，请允许弹出窗口后重试');else closeModal();};
+  window.clearWpsSettings=function(){cfg={url:'',name:'WPS 在线文档',appId:'',fileId:'',officeType:'Writer',sdkUrl:'./web-office-sdk-solution.umd.js',tokenApi:''};localStorage.removeItem(KEY);persist();closeModal();toast('已清除 WebOffice 配置');};
+  status();
+})();
+</script>
+
+
+
+</body></html>
