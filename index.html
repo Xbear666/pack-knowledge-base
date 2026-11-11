@@ -229,6 +229,13 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
   background: var(--bg-alt); border: 1px solid var(--divider); border-radius: var(--radius); padding: 10px;
 }
 .admin-side .side-t { font-size: 12px; color: var(--t3); font-weight: 600; padding: 6px 10px; }
+.admin-tool-list { display: flex; flex-direction: column; gap: 6px; padding: 0 2px; }
+.admin-tool-btn {
+  text-align: left; padding: 8px 10px; border-radius: 6px; font-size: 13px;
+  color: var(--t2); border: 1px solid transparent; transition: all .15s; width: 100%;
+}
+.admin-tool-btn:hover { background: rgba(0,0,0,.04); color: var(--t1); border-color: var(--divider); }
+html.dark .admin-tool-btn:hover { background: rgba(255,255,255,.055); }
 .admin-ch-row {
   padding: 7px 10px; border-radius: 5px; cursor: pointer; font-size: 13.5px;
   display: flex; justify-content: space-between; align-items: center;
@@ -329,6 +336,9 @@ html.dark .card.highlight-target { outline-color:var(--brand); }
 html.dark .kb-hit { background:rgba(234,179,8,.30); color:inherit; }
 .nav .theme-btn { width:34px; height:34px; display:grid; place-items:center; border:1px solid var(--divider); border-radius:8px; color:var(--t2); font-size:17px; }
 .nav .theme-btn:hover { color:var(--brand); border-color:var(--brand); background:var(--bg-soft); }
+.nav .theme-btn:disabled { opacity:.55; cursor:default; }
+@keyframes kb-refresh-spin { to { transform: rotate(360deg); } }
+#refreshBtn.spinning svg { animation: kb-refresh-spin .9s linear infinite; }
 .kb-filter-panel { margin:22px 0 0; padding:18px 12px 14px; border-top:1px solid var(--divider); }
 .kb-filter-title { color:var(--t2); font-size:12px; font-weight:700; margin:0 0 8px; display:flex; align-items:center; justify-content:space-between; gap:6px; }
 .kb-filter-title small { color:var(--t3); font-size:11px; font-weight:400; }
@@ -391,6 +401,7 @@ html.dark .kb-hit { background:rgba(234,179,8,.30); color:inherit; }
       <input type="text" id="searchInput" placeholder="搜索标题、正文、标签…（按 / 搜索）" oninput="handleSearch()">
     </div>
     <div class="nav-right">
+      <button class="theme-btn" id="refreshBtn" type="button" title="从云端刷新最新内容" aria-label="从云端刷新最新内容" onclick="refreshFromCloud()"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button>
       <button class="theme-btn" id="themeToggle" type="button" title="切换深色模式" aria-label="切换深色模式" aria-pressed="false">☾</button>
       <button class="admin-btn" onclick="enterAdmin()">管理</button>
     </div>
@@ -400,7 +411,7 @@ html.dark .kb-hit { background:rgba(234,179,8,.30); color:inherit; }
 <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
 <!-- ===== 前台阅读视图 ===== -->
-<div class="reader-view hidden" id="readerView">
+<div class="reader-view" id="readerView">
   <aside class="sidebar" id="sidebar">
     <div class="side-label">目录</div>
     <div id="navList"><button type="button" class="chapter-row all"><span class="ch-title">全部章节</span><span class="ch-count">5</span></button><div class="chapter-block" data-chapter-block="ch1">
@@ -487,7 +498,7 @@ html.dark .kb-hit { background:rgba(234,179,8,.30); color:inherit; }
 </div>
 
 <!-- ===== 后台管理视图 ===== -->
-<div class="admin-view active" id="adminView">
+<div class="admin-view" id="adminView">
   <div class="admin-wrap" id="adminLoginPage" style="display: none;">
     <div class="admin-login-box">
       <h2>管理后台登录</h2>
@@ -505,16 +516,6 @@ html.dark .kb-hit { background:rgba(234,179,8,.30); color:inherit; }
     <div class="admin-head">
       <h2>内容管理</h2>
       <div class="actions">
-        <button class="btn btn-sm" onclick="exportData()">导出数据</button>
-        <button class="btn btn-sm" onclick="document.getElementById('importFile').click()">导入数据 JSON</button>
-        <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importData(event)">
-        <button class="btn btn-sm" onclick="document.getElementById('importFiles').click()">导入文件</button>
-        <input type="file" id="importFiles" multiple="" accept=".pdf,.docx,.doc,.png,.jpg,.jpeg,.xlsx,.xls,.pptx,.txt,.md,.csv,.html,.htm" style="display:none" onchange="kbImportFiles(event)">
-        <button class="btn btn-sm" onclick="kbExportOfflineHTML()">导出离线网页</button>
-        <button class="btn btn-sm" onclick="kbExportPDF()">导出 PDF</button>
-        <button class="btn btn-sm" onclick="kbExportEPUB()">导出 EPUB</button>
-        <button class="btn btn-sm" onclick="showWpsSettings()">WPS 在线编辑</button>
-        <button class="btn btn-sm" onclick="showSettings()">设置</button>
         <button class="btn btn-sm btn-primary" id="btnSaveChanges" onclick="saveChanges()" style="opacity:0.6">已保存</button>
         <button class="btn btn-sm btn-primary" onclick="confirmExitAdmin()">返回首页</button>
         <button class="btn btn-sm" onclick="exitAdmin()">退出后台</button>
@@ -525,6 +526,21 @@ html.dark .kb-hit { background:rgba(234,179,8,.30); color:inherit; }
         <div class="side-t">章节列表</div>
         <div id="adminChList"><div class="admin-ch-row"><span>入职指南</span><button class="del" onclick="event.stopPropagation();delChapter('ch1')">×</button></div><div class="admin-ch-row"><span>产品与技术基础</span><button class="del" onclick="event.stopPropagation();delChapter('ch2')">×</button></div><div class="admin-ch-row active"><span>常用操作流程</span><button class="del" onclick="event.stopPropagation();delChapter('ch3')">×</button></div></div>
         <button class="btn btn-sm" style="width:100%;margin-top:8px" onclick="editChapter(-1)">+ 新增章节</button>
+
+        <div class="side-t" style="margin-top:16px">工具</div>
+        <div class="admin-tool-list">
+          <button class="admin-tool-btn" type="button" onclick="exportData()">导出数据</button>
+          <button class="admin-tool-btn" type="button" onclick="document.getElementById('importFile').click()">导入数据 JSON</button>
+          <button class="admin-tool-btn" type="button" onclick="document.getElementById('importFiles').click()">导入文件</button>
+          <button class="admin-tool-btn" type="button" onclick="kbExportOfflineHTML()">导出离线网页</button>
+          <button class="admin-tool-btn" type="button" onclick="kbExportPDF()">导出 PDF</button>
+          <button class="admin-tool-btn" type="button" onclick="kbExportEPUB()">导出 EPUB</button>
+          <button class="admin-tool-btn" type="button" onclick="showWpsSettings()">WPS 在线编辑</button>
+          <button class="admin-tool-btn" type="button" onclick="showSettings()">设置</button>
+          <button class="admin-tool-btn" type="button" onclick="openChangelog()">网页更新日志</button>
+        </div>
+        <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importData(event)">
+        <input type="file" id="importFiles" multiple="" accept=".pdf,.docx,.doc,.png,.jpg,.jpeg,.xlsx,.xls,.pptx,.txt,.md,.csv,.html,.htm" style="display:none" onchange="kbImportFiles(event)">
       </div>
       <div class="admin-main">
         <div class="main-head">
@@ -567,6 +583,7 @@ let appData = {
   bookTitle: '内部知识库',
   bookDesc: '在这里查看公司内部培训资料、操作规范和常见问题解答。',
   adminPass: 'admin123',
+  changelog: '',
   chapters: []
 };
 let curChId = null;
@@ -579,6 +596,7 @@ function sampleData() {
     bookTitle: '内部知识库',
     bookDesc: '在这里查看公司内部培训资料、操作规范和常见问题解答。',
     adminPass: 'admin123',
+    changelog: '',
     chapters: [
       {
         id: 'ch1', title: '入职指南',
@@ -612,17 +630,31 @@ function sampleData() {
 
 // ===== 云同步（Supabase）=====
 const CLOUD_CFG_KEY = 'h5_kb_cloud_config';
-let cloudConfig = { url: 'https://hdlsqsbynzasaguprkoy.supabase.co', anonKey: 'sb_publishable_Xi00Eza3rZjiK9OE8OzTYA_88rwucI-' };
+const DEFAULT_CLOUD = { url: 'https://hdlsqsbynzasaguprkoy.supabase.co', anonKey: 'sb_publishable_Xi00Eza3rZjiK9OE8OzTYA_88rwucI-' };
+let cloudConfig = Object.assign({}, DEFAULT_CLOUD);
 let cloudReady = false;
 
+function normalizeCloudUrl(u) {
+  if (!u) return DEFAULT_CLOUD.url;
+  let s = String(u).trim().replace(/\/+$/, '').replace(/\/rest\/v1\/?$/i, '').replace(/\/+$/, '');
+  if (!/^https?:\/\/[^\s/]+/i.test(s)) return DEFAULT_CLOUD.url;
+  if (!/\.supabase\.co$/i.test(s)) return DEFAULT_CLOUD.url;
+  return s;
+}
+function normalizeCloudKey(k) {
+  if (!k) return DEFAULT_CLOUD.anonKey;
+  const s = String(k).trim();
+  if (!/^(sb_publishable_|sb_secret_|eyJ)/i.test(s)) return DEFAULT_CLOUD.anonKey;
+  return s;
+}
 function loadCloudConfig() {
-  // 写死的默认配置优先；本地仅记录用户在设置里改过的值
+  // 以写死默认为准；本地缓存仅作兼容，脏地址/残缺 Key 自动清洗并回退默认
   try {
     const s = localStorage.getItem(CLOUD_CFG_KEY);
     if (s) {
       const saved = JSON.parse(s);
-      if (saved.url) cloudConfig.url = saved.url;
-      if (saved.anonKey) cloudConfig.anonKey = saved.anonKey;
+      if (saved.url) cloudConfig.url = normalizeCloudUrl(saved.url);
+      if (saved.anonKey) cloudConfig.anonKey = normalizeCloudKey(saved.anonKey);
     }
   } catch(e) {}
 }
@@ -670,6 +702,72 @@ async function pullFromCloud() {
     if (!Array.isArray(rows) || rows.length === 0 || !rows[0].data) return null;
     return rows[0].data;
   } catch(e) { console.warn('云端解析失败', e); return null; }
+}
+
+// 刷新结果弹窗（复用全局模态框）
+function openCloudMsg(title, msg) {
+  document.getElementById('modalBox').innerHTML =
+    '<h3>' + esc(title) + '</h3>' +
+    '<div class="f-group"><p style="font-size:13.5px;color:var(--t2);line-height:1.7;margin:0;">' + esc(msg) + '</p></div>' +
+    '<div class="modal-btns"><button class="btn btn-primary" onclick="closeModal()">知道了</button></div>';
+  document.getElementById('modalMask').classList.add('active');
+}
+
+// 首页刷新：从云端拉取最新内容，失败按原因分类弹窗
+async function refreshFromCloud() {
+  const btn = document.getElementById('refreshBtn');
+  if (!cloudReady) {
+    openCloudMsg('无法刷新', '未配置云同步：当前内容仅保存在本机浏览器，无法从云端加载。');
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.classList.add('spinning'); }
+  let res;
+  try {
+    res = await _cloudFetch(_cloudBase() + '/rest/v1/knowledge_base?select=data&id=eq.1', { headers: _cloudHeaders() });
+  } catch (e) {
+    res = { ok: false, status: 0, reason: 'network', body: ((e && e.name) || 'Error') + ': ' + ((e && e.message) || '') };
+  }
+  if (btn) { btn.disabled = false; btn.classList.remove('spinning'); }
+
+  if (!res.ok) {
+    let msg;
+    if (res.reason === 'network') {
+      msg = '网络连接失败：当前网络访问不到 Supabase 云端（可能被防火墙/代理阻断或连接超时），请检查网络后重试。';
+    } else if (res.status === 401 || res.status === 403) {
+      msg = '云端鉴权失败：访问 Key 无效或读写权限不足，请在后台「设置」中核对 Publishable Key。';
+    } else if (res.status === 404) {
+      msg = '云端数据表不存在：请确认 Supabase 中已创建 knowledge_base 表（id、data 字段），或核对项目地址是否正确。';
+    } else {
+      msg = '云端刷新失败（HTTP ' + res.status + '），请稍后重试。';
+    }
+    openCloudMsg('刷新失败', msg);
+    return;
+  }
+
+  let cloudData = null;
+  try {
+    const rows = JSON.parse(res.body);
+    if (Array.isArray(rows) && rows.length && rows[0].data) cloudData = rows[0].data;
+  } catch (e) {
+    openCloudMsg('刷新失败', '云端返回的数据解析失败，数据格式可能已损坏。');
+    return;
+  }
+  if (!cloudData || !Array.isArray(cloudData.chapters)) {
+    openCloudMsg('暂无更新', '云端当前没有可同步的内容。');
+    return;
+  }
+
+  const localT = _kbTs(appData.updatedAt);
+  const cloudT = _kbTs(cloudData.updatedAt);
+  const shouldPull = (!localT || !cloudT || cloudT >= localT);
+  if (shouldPull) {
+    appData = cloudData;
+    try { save(); } catch (e) {}
+    renderNav(); renderDoc();
+    openCloudMsg('刷新成功', '已从云端加载最新内容。');
+  } else {
+    openCloudMsg('已是最新', '云端版本不新于本机当前内容，无需更新。');
+  }
 }
 async function pushToCloud(data) {
   if (!cloudReady) return { ok: false, reason: 'disabled', status: 0 };
@@ -739,7 +837,7 @@ function saveChanges() {
         var msg;
         if (res.reason === 'network') msg = '云端连接失败：当前网络无法访问 Supabase（请检查网络或代理）';
         else if (res.status === 401 || res.status === 403) msg = '云端鉴权失败：Key 或读写权限不对';
-        else if (res.status === 404) msg = '云端数据表不存在';
+        else if (res.status === 404) msg = (res.body && /PGRST125|Invalid path/i.test(res.body)) ? '云端地址路径无效：Project URL 带了多余路径，请检查云同步地址' : '云端数据表不存在';
         else msg = '云端保存失败（HTTP ' + res.status + '）';
         toast(msg);
       }
@@ -920,6 +1018,7 @@ function copyToc() {
 
 // ===== 后台管理 =====
 function enterAdmin() {
+  toggleSidebar(false);
   document.getElementById('readerView').classList.add('hidden');
   document.getElementById('adminView').classList.add('active');
   document.getElementById('adminLoginPage').style.display = 'block';
@@ -928,6 +1027,7 @@ function enterAdmin() {
   document.getElementById('adminPwd').value = '';
 }
 function exitAdmin() {
+  toggleSidebar(false);
   document.getElementById('adminView').classList.remove('active');
   document.getElementById('readerView').classList.remove('hidden');
 }
@@ -1141,8 +1241,8 @@ function saveSettings() {
   const p = document.getElementById('sPass').value.trim();
   if (p) appData.adminPass = p;
   // 保存云配置
-  const curl = document.getElementById('sCloudUrl').value.trim();
-  const ckey = document.getElementById('sCloudAnonKey').value.trim();
+  const curl = normalizeCloudUrl(document.getElementById('sCloudUrl').value.trim());
+  const ckey = normalizeCloudKey(document.getElementById('sCloudAnonKey').value.trim());
   if (curl !== cloudConfig.url || ckey !== cloudConfig.anonKey) {
     cloudConfig.url = curl;
     cloudConfig.anonKey = ckey;
@@ -1153,6 +1253,26 @@ function saveSettings() {
   }
   markDirty(); closeModal(); renderNav(); renderDoc();
   toast('设置已修改，记得点保存');
+}
+
+// ===== 网页更新日志（后台可编辑保存，随知识库云端同步） =====
+function openChangelog() {
+  document.getElementById('modalBox').innerHTML = `
+    <h3>网页更新日志</h3>
+    <div class="f-group">
+      <label>版本更新记录（每行一条，保存后随知识库一起同步到云端）</label>
+      <textarea id="sChangelog" rows="10" placeholder="例如：&#10;V1.5 · 2026-11-11 · 新增高压安全章节&#10;V1.4 · 2026-11-05 · 修正物料请购流程">${esc(appData.changelog || '')}</textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveChangelog()">保存日志</button>
+    </div>`;
+  document.getElementById('modalMask').classList.add('active');
+}
+function saveChangelog() {
+  appData.changelog = document.getElementById('sChangelog').value;
+  markDirty(); closeModal();
+  toast('更新日志已保存，记得点「保存修改」同步到云端');
 }
 
 // 导入导出
@@ -1253,6 +1373,7 @@ renderDoc();
     if (!appData.bookTitle) appData.bookTitle = '内部知识库';
     if (typeof appData.bookDesc !== 'string') appData.bookDesc = '在这里查看公司内部培训资料、操作规范和常见问题解答。';
     if (!appData.adminPass) appData.adminPass = 'admin123';
+    if (typeof appData.changelog !== 'string') appData.changelog = '';
     const usedCh = new Set();
     appData.chapters.forEach((ch, ci) => {
       if (!ch || typeof ch !== 'object') return;
@@ -1769,7 +1890,7 @@ renderDoc();
     const fallback = () => { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); toast('目录已复制，去豆包粘贴提问吧'); } catch (_) { toast('复制失败，请手动选择目录文本'); } ta.remove(); };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => toast('目录已复制，去豆包粘贴提问吧')).catch(fallback); else fallback();
   };
-  exitAdmin = function () { document.getElementById('adminView').classList.remove('active'); document.getElementById('readerView').classList.remove('hidden'); renderNav(); renderDoc(); };
+  exitAdmin = function () { toggleSidebar(false); document.getElementById('adminView').classList.remove('active'); document.getElementById('readerView').classList.remove('hidden'); renderNav(); renderDoc(); };
 
   /* 将增强状态暴露给同一离线页面中的导入、导出和附件模块。 */
   window.kbState = kbState;
