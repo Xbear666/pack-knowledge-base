@@ -2,7 +2,7 @@
 <html lang="zh-CN" class=""><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pack设计规范-V2.0</title>
+<title>Pack设计规范-V1.5</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%233451b2'/%3E%3Cpath d='M17 33l10 11 20-24' fill='none' stroke='white' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
 :root {
@@ -437,7 +437,7 @@ html.dark .kb-hit { background:rgba(234,179,8,.30); color:inherit; }
     <div class="side-label">目录</div>
     <div id="navList"><button type="button" class="chapter-row all"><span class="ch-title">全部章节</span><span class="ch-count">5</span></button><div class="chapter-block" data-chapter-block="ch1">
         <button type="button" class="chapter-row " data-ch="ch1" aria-expanded="false">
-          <span class="ch-num">1</span><span class="ch-title">使用指南</span>
+          <span class="ch-num">1</span><span class="ch-title">入职指南</span>
           <span class="ch-count">2</span><span class="fold-arrow">▸</span>
         </button>
         <div class="sub-toc">
@@ -489,7 +489,7 @@ html.dark .kb-hit { background:rgba(234,179,8,.30); color:inherit; }
 
     <div class="side-ai">
       <h4>🤖 豆包助手</h4>
-      <p>把不懂的文档内容复制下来，粘贴到豆包对话框，就能让 AI回答你的问题🤞。</p>
+      <p>把知识库目录复制下来，粘贴到豆包对话框，就能让 AI 基于公司文档回答你的问题。</p>
       <div class="btn-row">
         <button class="mini-btn" onclick="copyToc()">复制目录</button>
         <a class="mini-btn primary" href="https://www.doubao.com" target="_blank">打开豆包</a>
@@ -500,7 +500,7 @@ html.dark .kb-hit { background:rgba(234,179,8,.30); color:inherit; }
   <main class="content">
     <div class="doc">
       <div class="doc-head">
-        <h1 id="docTitle">Pack设计规范-V2.0</h1>
+        <h1 id="docTitle">Pack设计规范-V1.5</h1>
         <p class="desc" id="docDesc">在这里查看储能Pack设计规范、操作规范和常见问题解答。</p>
         <p class="stat" id="docStat">共 <b>3</b> 个章节 · <b>5</b> 条内容 · 当前显示 <b>1</b> 条</p>
       </div>
@@ -590,20 +590,37 @@ html.dark .kb-hit { background:rgba(234,179,8,.30); color:inherit; }
       <div class="f-group"><label>知识库名称</label><input type="text" id="sTitle" value="Pack设计规划-V2.0"></div>
       <div class="f-group"><label>简介</label><textarea id="sDesc" rows="3">在这里查看储能Pack设计规划、操作规范和常见问题解答。</textarea></div>
       <div class="f-group"><label>修改管理密码</label><input type="password" id="sPass" autocomplete="new-password" placeholder="留空则不修改"></div>
-      <div class="kb-filter-hint">首次使用默认管理密码：admin123。离线 HTML 的密码校验仅用于防止误操作，不等同于服务器端安全认证。</div>
+      <div class="kb-filter-hint">密码以加盐哈希保存在本地/云端，页面不保存明文；离线 HTML 的校验仅用于防止误操作，不等同于服务器端安全认证。</div>
       <div class="modal-btns"><button class="btn" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveSettings()">保存</button></div></div>
 </div>
 
 <div class="toast" id="toast"></div>
 
-<script>window.__KB_EMBEDDED_DATA__={"bookTitle":"Pack设计规范-V1.5","bookDesc":"在这里查看储能Pack设计规范、操作规范和常见问题解答。","adminPass":"admin123","chapters":[{"id":"ch1","title":"入职指南","items":[{"id":"i11","title":"公司组织架构","level":"normal","tags":["入门","组织"],"content":"\u003cp>公司设有研发中心、生产制造中心、质量管理部、供应链部、市场营销部和职能支持部门。\u003c/p>\u003cp>新员工入职后由部门主管介绍本部门架构和主要职责。\u003c/p>   https://sspai.com/?utm_source=wetab.link","updatedAt":"2026-11-10T03:21:33.568Z"},{"id":"i12","title":"办公系统使用","level":"important","tags":["工具","系统"],"content":"\u003cp>日常办公主要使用以下系统：\u003c/p>\u003cul>\u003cli>飞书：内部沟通、审批流程、文档协作\u003c/li>\u003cli>OA系统：请假、报销、考勤查询\u003c/li>\u003cli>知识库：技术文档、SOP、培训资料\u003c/li>\u003c/ul>"}]},{"id":"ch2","title":"产品与技术基础","items":[{"id":"i21","title":"储能PACK系统概述","level":"important","tags":["产品","储能"],"content":"\u003cp>储能PACK是储能系统的核心单元，由电芯、BMS、热管理系统、结构件和电气连接系统组成。\u003c/p>\u003cp>我们主要生产588Ah和648Ah电芯对应的标准PACK产品，应用于工商业储能和大储场景。\u003c/p>\u003cp>参考：\u003ca href=\"https://www.zhihu.com/topic/19813432\" target=\"_blank\">储能系统入门\u003c/a>\u003c/p>"},{"id":"i22","title":"高压安全注意事项","level":"warning","tags":["安全","高压"],"content":"\u003cp>储能系统涉及高压直流电，操作时必须遵守以下安全规范：\u003c/p>\u003col>\u003cli>操作前必须断电并验电\u003c/li>\u003cli>佩戴绝缘手套和护目镜\u003c/li>\u003cli>高压区域两人以上方可作业\u003c/li>\u003c/ol>"}]},{"id":"ch3","title":"常用操作流程","items":[{"id":"i31","title":"物料请购流程","level":"normal","tags":["流程","采购"],"content":"\u003cp>1. 在OA系统提交请购申请，注明物料编码、数量、需求日期\u003c/p>\u003cp>2. 部门主管审批\u003c/p>\u003cp>3. 采购部询价比价\u003c/p>\u003cp>4. 下单跟进到货\u003c/p>"}]}],"attachmentsMeta":[]};window.__KB_EMBEDDED_ATTACHMENTS__={};</script>
+<script>window.__KB_EMBEDDED_DATA__={"bookTitle":"Pack设计规范-V1.5","bookDesc":"在这里查看储能Pack设计规范、操作规范和常见问题解答。","adminPassHash":"35f08677bf5d6aae3c6065901be987911458ed47215d779347a0cf6ac92a820c","chapters":[{"id":"ch1","title":"入职指南","items":[{"id":"i11","title":"公司组织架构","level":"normal","tags":["入门","组织"],"content":"\u003cp>公司设有研发中心、生产制造中心、质量管理部、供应链部、市场营销部和职能支持部门。\u003c/p>\u003cp>新员工入职后由部门主管介绍本部门架构和主要职责。\u003c/p>   https://sspai.com/?utm_source=wetab.link","updatedAt":"2026-11-10T03:21:33.568Z"},{"id":"i12","title":"办公系统使用","level":"important","tags":["工具","系统"],"content":"\u003cp>日常办公主要使用以下系统：\u003c/p>\u003cul>\u003cli>飞书：内部沟通、审批流程、文档协作\u003c/li>\u003cli>OA系统：请假、报销、考勤查询\u003c/li>\u003cli>知识库：技术文档、SOP、培训资料\u003c/li>\u003c/ul>"}]},{"id":"ch2","title":"产品与技术基础","items":[{"id":"i21","title":"储能PACK系统概述","level":"important","tags":["产品","储能"],"content":"\u003cp>储能PACK是储能系统的核心单元，由电芯、BMS、热管理系统、结构件和电气连接系统组成。\u003c/p>\u003cp>我们主要生产588Ah和648Ah电芯对应的标准PACK产品，应用于工商业储能和大储场景。\u003c/p>\u003cp>参考：\u003ca href=\"https://www.zhihu.com/topic/19813432\" target=\"_blank\">储能系统入门\u003c/a>\u003c/p>"},{"id":"i22","title":"高压安全注意事项","level":"warning","tags":["安全","高压"],"content":"\u003cp>储能系统涉及高压直流电，操作时必须遵守以下安全规范：\u003c/p>\u003col>\u003cli>操作前必须断电并验电\u003c/li>\u003cli>佩戴绝缘手套和护目镜\u003c/li>\u003cli>高压区域两人以上方可作业\u003c/li>\u003c/ol>"}]},{"id":"ch3","title":"常用操作流程","items":[{"id":"i31","title":"物料请购流程","level":"normal","tags":["流程","采购"],"content":"\u003cp>1. 在OA系统提交请购申请，注明物料编码、数量、需求日期\u003c/p>\u003cp>2. 部门主管审批\u003c/p>\u003cp>3. 采购部询价比价\u003c/p>\u003cp>4. 下单跟进到货\u003c/p>"}]}],"attachmentsMeta":[]};window.__KB_EMBEDDED_ATTACHMENTS__={};</script>
 <script>
 // ===== 数据 =====
 const KEY = 'h5_kb_embedded_mwaa082x_ivdtx';
+
+// ===== 密码加盐哈希（前端不保存明文，浏览器原生 SHA-256） =====
+const KB_PWD_SALT = 'kb_pack_2026_salt_7f3a91';
+async function kbSha256Hex(str) {
+  const data = new TextEncoder().encode(String(str));
+  const buf = await crypto.subtle.digest('SHA-256', data);
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+async function kbHashPassword(pwd) { return kbSha256Hex(KB_PWD_SALT + ':' + String(pwd)); }
+async function kbPwdEqual(input, stored) {
+  const a = await kbHashPassword(input == null ? '' : input);
+  const b = String(stored || '');
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
 let appData = {
   bookTitle: '内部知识库',
   bookDesc: '在这里查看公司内部培训资料、操作规范和常见问题解答。',
-  adminPass: 'admin123',
+  adminPassHash: '35f08677bf5d6aae3c6065901be987911458ed47215d779347a0cf6ac92a820c',
   changelog: '',
   chapters: []
 };
@@ -616,7 +633,7 @@ function sampleData() {
   return {
     bookTitle: '内部知识库',
     bookDesc: '在这里查看公司内部培训资料、操作规范和常见问题解答。',
-    adminPass: 'admin123',
+    adminPassHash: '35f08677bf5d6aae3c6065901be987911458ed47215d779347a0cf6ac92a820c',
     changelog: '',
     chapters: [
       {
@@ -783,6 +800,7 @@ async function refreshFromCloud() {
   const shouldPull = (!localT || !cloudT || cloudT >= localT);
   if (shouldPull) {
     appData = cloudData;
+    if (typeof kbMigrateData === 'function') kbMigrateData();
     try { save(); } catch (e) {}
     renderNav(); renderDoc();
     openCloudMsg('刷新成功', '已从云端加载最新内容。');
@@ -822,6 +840,7 @@ function load() {
         const shouldPull = (!localT || !cloudT || cloudT >= localT);
         if (shouldPull) {
           appData = cloudData;
+          if (typeof kbMigrateData === 'function') kbMigrateData();
           try { save(); } catch(e) {}
           renderNav(); renderDoc();
           toast('已从云端同步最新内容');
@@ -888,7 +907,7 @@ function renderNav() {
       </button>
       <div class="sub-toc">
         ${ch.items.map((it, ii) => `
-          <a href="javascript:;" data-item="${it.id}" data-ch="${ch.id}">
+          <a href="#item-${it.id}" data-item="${it.id}" data-ch="${ch.id}">
             <span class="num">${ii+1}</span>
             <span class="label">${esc(it.title)}</span>
           </a>
@@ -1060,13 +1079,23 @@ function confirmExitAdmin() {
   }
   exitAdmin();
 }
-function doLogin() {
-  if (document.getElementById('adminPwd').value === appData.adminPass) {
+async function doLogin() {
+  const input = document.getElementById('adminPwd').value;
+  const stored = appData.adminPassHash || '';
+  let ok = false;
+  try {
+    ok = !!(stored && await kbPwdEqual(input, stored));
+  } catch (_) {
+    document.getElementById('loginErr').textContent = '当前浏览器不支持安全哈希，请更换 Edge/Chrome 打开';
+    return;
+  }
+  if (ok) {
     document.getElementById('adminLoginPage').style.display = 'none';
     document.getElementById('adminMainPage').style.display = 'block';
     renderAdminChs();
   } else {
     document.getElementById('loginErr').textContent = '密码错误';
+    document.getElementById('adminPwd').value = '';
   }
 }
 
@@ -1230,8 +1259,8 @@ function showSettings() {
       <textarea id="sDesc" rows="3">${esc(appData.bookDesc)}</textarea>
     </div>
     <div class="f-group">
-      <label>管理密码</label>
-      <input type="text" id="sPass" value="${esc(appData.adminPass)}">
+      <label>修改管理密码</label>
+      <input type="password" id="sPass" autocomplete="new-password" placeholder="留空则不修改">
     </div>
     <div style="border-top:1px solid var(--divider);margin:16px 0;padding-top:16px;">
       <div style="font-size:14px;font-weight:600;margin-bottom:10px;">☁️ 云同步（多设备共享）</div>
@@ -1256,11 +1285,19 @@ function showSettings() {
   `;
   document.getElementById('modalMask').classList.add('active');
 }
-function saveSettings() {
+async function saveSettings() {
   appData.bookTitle = document.getElementById('sTitle').value.trim() || '内部知识库';
   appData.bookDesc = document.getElementById('sDesc').value;
-  const p = document.getElementById('sPass').value.trim();
-  if (p) appData.adminPass = p;
+  const p = document.getElementById('sPass').value;
+  if (p) {
+    if (p.length < 6) { toast('密码至少 6 位'); return; }
+    try {
+      appData.adminPassHash = await kbHashPassword(p);
+    } catch (_) {
+      toast('当前浏览器不支持安全哈希，密码未保存'); return;
+    }
+    delete appData.adminPass;
+  }
   // 保存云配置
   const curl = normalizeCloudUrl(document.getElementById('sCloudUrl').value.trim());
   const ckey = normalizeCloudKey(document.getElementById('sCloudAnonKey').value.trim());
@@ -1313,7 +1350,7 @@ function importData(ev) {
     try {
       const d = JSON.parse(e.target.result);
       if (!d.chapters) throw 0;
-      appData = d; appData.updatedAt = new Date().toISOString(); save(); curChId = null;
+      appData = d; kbMigrateData(); appData.updatedAt = new Date().toISOString(); save(); curChId = null;
       renderAdminChs(); renderAdminItems(); renderNav(); renderDoc();
       toast('导入成功');
     } catch(_) { toast('导入失败：格式不正确'); }
@@ -1414,13 +1451,14 @@ renderDoc();
     if (!Array.isArray(appData.attachmentsMeta)) appData.attachmentsMeta = [];
     if (!appData.bookTitle) appData.bookTitle = '内部知识库';
     if (typeof appData.bookDesc !== 'string') appData.bookDesc = '在这里查看公司内部培训资料、操作规范和常见问题解答。';
-    if (!appData.adminPass) appData.adminPass = 'admin123';
+    if (appData.adminPass) { delete appData.adminPass; }
+    if (!appData.adminPassHash) appData.adminPassHash = '35f08677bf5d6aae3c6065901be987911458ed47215d779347a0cf6ac92a820c';
     if (typeof appData.changelog !== 'string') appData.changelog = '';
     const usedCh = new Set();
     appData.chapters.forEach((ch, ci) => {
       if (!ch || typeof ch !== 'object') return;
       if (!ch.id || usedCh.has(String(ch.id))) ch.id = `ch_${Date.now().toString(36)}_${ci}`;
-      ch.id = String(ch.id); usedCh.add(ch.id);
+      ch.id = String(ch.id).replace(/[^a-zA-Z0-9_-]/g, '_'); usedCh.add(ch.id);
       ch.title = String(ch.title || `未命名章节 ${ci+1}`);
       if (!Array.isArray(ch.items)) ch.items = [];
       const usedItems = new Set();
@@ -1468,6 +1506,7 @@ renderDoc();
         }
         [...el.attributes].forEach(attr => {
           const n = attr.name.toLowerCase(), v = attr.value.trim();
+          if (/^on/i.test(n)) { el.removeAttribute(attr.name); return; }
           const keepBasic = ['title','colspan','rowspan','scope','alt','width','height','loading'].includes(n);
           if (n === 'href' && tag === 'A') {
             const safe = /^(https?:|mailto:|#item-[a-zA-Z0-9_-]+$|#sec-[a-zA-Z0-9_-]+$|#attachment-[a-zA-Z0-9_-]+$)/i.test(v);
@@ -1909,7 +1948,7 @@ renderDoc();
       <div class="f-group"><label>知识库名称</label><input type="text" id="sTitle" value="${kbEsc(appData.bookTitle)}"></div>
       <div class="f-group"><label>简介</label><textarea id="sDesc" rows="3">${kbEsc(appData.bookDesc)}</textarea></div>
       <div class="f-group"><label>修改管理密码</label><input type="password" id="sPass" autocomplete="new-password" placeholder="留空则不修改"></div>
-      <div class="kb-filter-hint">首次使用默认管理密码：admin123。离线 HTML 的密码校验仅用于防止误操作，不等同于服务器端安全认证。</div>
+      <div class="kb-filter-hint">密码以加盐哈希保存在本地/云端，页面不保存明文；离线 HTML 的校验仅用于防止误操作，不等同于服务器端安全认证。</div>
       <div style="border-top:1px solid var(--divider);margin:16px 0;padding-top:16px;">
         <div style="font-size:14px;font-weight:600;margin-bottom:10px;">☁️ 云同步（多设备共享）</div>
         <p style="font-size:12px;color:var(--t3);margin-bottom:12px;">在 Supabase 创建项目后，把 Project URL 和 Publishable Key 填进来，所有设备打开都读同一份数据。不填则仅保存在本地浏览器。</p>
@@ -1948,6 +1987,7 @@ renderDoc();
   window.kbRenderFilters = kbRenderFilters;
   window.kbNormalizeLevel = kbNormalizeLevel;
   window.kbEsc = kbEsc;
+  window.kbMigrateData = kbMigrateData;
   /* 初次载入：不改知识库内容，只补兼容字段、读取筛选地址和渲染增强界面。 */
   kbMigrateData();
   kbLoadFavorites();
