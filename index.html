@@ -110,6 +110,9 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .sub-toc a .num { flex: none; min-width: 1.4em; color: var(--t3); font-size: 12px; font-variant-numeric: tabular-nums; }
 .sub-toc a.on .num { color: var(--brand); }
 .sub-toc a .label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sub-toc a.toc-depth-2 { padding-left: 22px; }
+.sub-toc a.toc-depth-3 { padding-left: 34px; }
+.kb-item-num { flex: none; min-width: 2.8em; color: var(--t3); font-size: 12px; font-variant-numeric: tabular-nums; }
 
 /* 侧边栏底部：豆包助手卡片 */
 .side-ai {
@@ -156,6 +159,9 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
   transition: border-color .2s;
 }
 .card:hover { border-color: var(--divider); }
+.card-depth-2 { margin-left: 22px; }
+.card-depth-3 { margin-left: 44px; }
+@media (max-width:768px){ .card-depth-2 { margin-left: 12px; } .card-depth-3 { margin-left: 24px; } }
 .card .card-title {
   font-size: 16px; font-weight: 600; margin-bottom: 8px;
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
@@ -172,6 +178,12 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .card .card-body a { color: var(--brand); }
 .card .card-body ul, .card .card-body ol { padding-left: 20px; margin-bottom: 8px; }
 .card .card-body li { margin-bottom: 4px; }
+.card-body h1, .card-body h2, .card-body h3, .card-body h4,
+.kb-rich-editor h1, .kb-rich-editor h2, .kb-rich-editor h3, .kb-rich-editor h4 { font-weight: 700; line-height: 1.4; margin: 12px 0 6px; }
+.card-body h1, .kb-rich-editor h1 { font-size: 18px; }
+.card-body h2, .kb-rich-editor h2 { font-size: 16.5px; }
+.card-body h3, .kb-rich-editor h3 { font-size: 15.5px; }
+.card-body h4, .kb-rich-editor h4 { font-size: 14.5px; }
 .card .card-tags { margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
 .tag {
   font-size: 12px; padding: 2px 10px; background: var(--bg);
@@ -268,6 +280,8 @@ html.dark .admin-tool-btn:hover { background: rgba(255,255,255,.055); }
 .admin-item-row .info .t { font-weight: 500; font-size: 14px; margin-bottom: 2px; }
 .admin-item-row .info .p { font-size: 12px; color: var(--t3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .admin-item-row .ops { display: flex; gap: 4px; flex: none; }
+.admin-depth-2 { margin-left: 18px; }
+.admin-depth-3 { margin-left: 36px; }
 
 /* 模态框 */
 .modal-mask {
@@ -508,7 +522,7 @@ html.dark .kb-hit { background:rgba(234,179,8,.30); color:inherit; }
           <div class="card-title kb-card-heading">
             <span class="kb-title-text">物料请购流程</span>
             
-            <a class="kb-anchor" href="#item-i31" aria-label="本条链接" title="本条链接">↗</a>
+            <a class="kb-anchor" href="#item-i31" data-kb-copy-link="i31" aria-label="本条链接" title="本条链接">↗</a>
             <button type="button" class="kb-fav " data-kb-fav="i31" aria-label="收藏条目" aria-pressed="false" title="收藏条目">☆</button>
           </div>
           <div class="kb-card-meta"><span>2 个标签</span></div>
@@ -1128,13 +1142,15 @@ function renderAdminItems() {
     return;
   }
   list.innerHTML = '';
-  ch.items.forEach((it, i) => {
+  const tree = window.kbBuildTree ? window.kbBuildTree(ch.items) : ch.items.map(node => ({ node, children: [] }));
+  const walk = window.kbWalkTree || function (roots, cb) { roots.forEach((n, i) => cb(n.node, `${i+1}`, 1)); };
+  walk(tree, (it, num, depth) => {
     const row = document.createElement('div');
-    row.className = 'admin-item-row';
+    row.className = 'admin-item-row admin-depth-' + depth;
     const prev = (it.content||'').replace(/<[^>]+>/g,'').substring(0, 60);
     row.innerHTML = `
       <div class="info">
-        <div class="t">${i+1}. ${esc(it.title)}</div>
+        <div class="t"><span class="kb-item-num">${num}</span> ${esc(it.title)}</div>
         <div class="p">${esc(prev)}${prev.length>=60?'...':''}</div>
       </div>
       <div class="ops">
@@ -1285,9 +1301,29 @@ function showSettings() {
   `;
   document.getElementById('modalMask').classList.add('active');
 }
+function kbAddLevelRow(){
+  const box = document.getElementById('lvRows'); if(!box) return;
+  const row = document.createElement('div');
+  row.className = 'f-row lv-row'; row.dataset.lvKey = ''; row.style.marginBottom = '10px';
+  row.innerHTML = '<div class="f-group"><label>名称</label><input type="text" class="lv-name" placeholder="档位名称"></div><div class="f-group"><label>颜色</label><input type="color" class="lv-color" value="#6b7280"></div><div class="f-group" style="justify-content:flex-end;"><button type="button" class="btn btn-sm btn-danger" onclick="kbRemoveLevelRow(this)">删除</button></div>';
+  box.appendChild(row);
+}
+function kbRemoveLevelRow(btn){ const row = btn.closest('.lv-row'); if(row) row.remove(); }
 async function saveSettings() {
   appData.bookTitle = document.getElementById('sTitle').value.trim() || '内部知识库';
   appData.bookDesc = document.getElementById('sDesc').value;
+  const lvRows = [...document.querySelectorAll('#lvRows .lv-row')];
+  const newLevels = [];
+  lvRows.forEach(row => {
+    const key = row.dataset.lvKey || ('lv_' + Math.random().toString(36).slice(2, 6));
+    const nameEl = row.querySelector('.lv-name'), colorEl = row.querySelector('.lv-color');
+    const name = (nameEl && nameEl.value.trim()) || '未命名';
+    const col = (colorEl && colorEl.value) || '#6b7280';
+    const colOk = /^#[0-9a-fA-F]{3,8}$/.test(String(col));
+    newLevels.push({ key, name: name.slice(0, 12), color: colOk ? col : '#6b7280', soft: '#f1f2f4' });
+  });
+  if (!newLevels.some(x => x.key === 'normal')) newLevels.push({ key: 'normal', name: '普通', color: '#6b7280', soft: '#f1f2f4' });
+  appData.levels = newLevels;
   const p = document.getElementById('sPass').value;
   if (p) {
     if (p.length < 6) { toast('密码至少 6 位'); return; }
@@ -1404,7 +1440,34 @@ renderDoc();
   let kbAllVisibleItems = [];
   let kbScrollQueued = false;
   let kbLastQuery = '';
-  const LEVEL_NAMES = { important: '重要', warning: '注意', normal: '普通' };
+  const DEFAULT_LEVEL_LIST = [
+    { key: 'important', name: '重要', color: '#d94848', soft: '#fdecea' },
+    { key: 'warning',   name: '注意', color: '#b8860b', soft: '#fff6e0' },
+    { key: 'normal',    name: '普通', color: '#6b7280', soft: '#f1f2f4' }
+  ];
+  function kbSafeColor(v, fallback){
+    v = String(v || '').trim();
+    if (/^#[0-9a-fA-F]{3,8}$/.test(v)) return v;
+    if (/^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*(,\s*(0?\.\d+|1|0)\s*)?\)$/.test(v)) return v;
+    return fallback;
+  }
+  function kbLevelList(){
+    if (!Array.isArray(appData.levels)) appData.levels = [];
+    if (!appData.levels.some(x => x && x.key === 'normal')) {
+      const d = DEFAULT_LEVEL_LIST.find(x => x.key === 'normal');
+      appData.levels.push({ key: d.key, name: d.name, color: d.color, soft: d.soft });
+    }
+    return appData.levels;
+  }
+  function kbLevelConfig(key){
+    const list = kbLevelList();
+    let c = list.find(x => x && x.key === key);
+    if (!c) c = list.find(x => x && x.key === 'normal') || DEFAULT_LEVEL_LIST[2];
+    const d = DEFAULT_LEVEL_LIST.find(x => x.key === c.key) || DEFAULT_LEVEL_LIST[2];
+    const nm = String(c.name || d.name).trim().slice(0, 12) || d.name;
+    return { key: c.key, name: nm, color: kbSafeColor(c.color, d.color), soft: kbSafeColor(c.soft, d.soft) };
+  }
+  function kbLevelName(key){ return kbLevelConfig(key).name; }
   const ALLOWED_TAGS = new Set(['A','P','BR','HR','STRONG','B','EM','I','U','S','DEL','INS','H1','H2','H3','H4','H5','H6','UL','OL','LI','BLOCKQUOTE','PRE','CODE','TABLE','THEAD','TBODY','TFOOT','TR','TH','TD','DIV','SPAN','IMG','SUP','SUB','SMALL','DL','DT','DD']);
   const DROP_TAGS = new Set(['SCRIPT','STYLE','IFRAME','OBJECT','EMBED','FORM','INPUT','BUTTON','SELECT','TEXTAREA','META','LINK','SVG','MATH','VIDEO','AUDIO','SOURCE','CANVAS']);
 
@@ -1433,7 +1496,7 @@ renderDoc();
     return out.length ? out.join(';') : null;
   }
   function kbNormalizeLevel(level) {
-    return ['important','warning','normal'].includes(level) ? level : 'normal';
+    return kbLevelList().some(x => x && x.key === level) ? level : 'normal';
   }
   function kbDate(value) {
     if (!value) return null;
@@ -1454,6 +1517,20 @@ renderDoc();
     if (appData.adminPass) { delete appData.adminPass; }
     if (!appData.adminPassHash) appData.adminPassHash = '35f08677bf5d6aae3c6065901be987911458ed47215d779347a0cf6ac92a820c';
     if (typeof appData.changelog !== 'string') appData.changelog = '';
+    if (!Array.isArray(appData.levels)) {
+      const oldCfg = (appData.levelConfig && typeof appData.levelConfig === 'object') ? appData.levelConfig : {};
+      appData.levels = DEFAULT_LEVEL_LIST.map(d => {
+        const o = oldCfg[d.key] || {};
+        return { key: d.key, name: String(o.name || d.name), color: kbSafeColor(o.color, d.color), soft: kbSafeColor(o.soft, d.soft) };
+      });
+      Object.keys(oldCfg).forEach(k => {
+        if (!DEFAULT_LEVEL_LIST.some(d => d.key === k)) {
+          const o = oldCfg[k];
+          appData.levels.push({ key: String(k), name: String(o.name || k), color: kbSafeColor(o.color, '#6b7280'), soft: kbSafeColor(o.soft, '#f1f2f4') });
+        }
+      });
+    }
+    delete appData.levelConfig;
     const usedCh = new Set();
     appData.chapters.forEach((ch, ci) => {
       if (!ch || typeof ch !== 'object') return;
@@ -1469,6 +1546,8 @@ renderDoc();
         it.title = String(it.title || `未命名条目 ${ii+1}`);
         it.content = String(it.content || '');
         it.tags = Array.isArray(it.tags) ? it.tags.map(t => String(t).trim()).filter(Boolean) : String(it.tags || '').split(/[,，]/).map(t => t.trim()).filter(Boolean);
+        it.depth = [1,2,3].includes(Number(it.depth)) ? Number(it.depth) : 1;
+        it.parentId = it.parentId ? String(it.parentId) : null;
         it.level = kbNormalizeLevel(it.level);
       });
     });
@@ -1597,9 +1676,38 @@ renderDoc();
     appData.chapters.forEach(ch => (ch.items || []).forEach(it => (it.tags || []).forEach(t => counts.set(String(t), (counts.get(String(t)) || 0) + 1))));
     const tags = [...counts.keys()].sort((a,b) => a.localeCompare(b, 'zh-CN'));
     tagsBox.innerHTML = tags.length ? tags.map(tag => `<button type="button" class="chip" data-kb-tag="${kbEsc(tag)}" aria-pressed="${kbState.tags.has(tag)}" title="${counts.get(tag)} 条">${kbEsc(tag)} <span style="opacity:.55;font-size:11px">${counts.get(tag)}</span></button>`).join('') : '<span class="kb-filter-hint">暂无标签，可在后台编辑条目添加。</span>';
-    document.querySelectorAll('[data-kb-level]').forEach(btn => btn.setAttribute('aria-pressed', String(kbState.levels.has(btn.dataset.kbLevel))));
+    const lvBox = document.getElementById('kbLevelFilters');
+    if (lvBox) lvBox.innerHTML = kbLevelList().map(x => {
+      const k = x.key; const c = kbLevelConfig(k); const on = kbState.levels.has(k);
+      return `<button type="button" class="chip" data-kb-level="${kbEsc(k)}" aria-pressed="${on}" style="${on ? `border-color:${c.color};color:${c.color}` : ''}">${kbEsc(c.name)}</button>`;
+    }).join('');
     document.querySelectorAll('[data-kb-days]').forEach(btn => btn.setAttribute('aria-pressed', String(Number(btn.dataset.kbDays) === kbState.updatedDays)));
     const fav = document.getElementById('kbFavoritesOnly'); if (fav) fav.checked = kbState.favoritesOnly;
+  }
+  function kbBuildTree(items){
+    const list = (items||[]).map(it => { let d = Number(it.depth); if (d !== 2 && d !== 3) d = 1; it.depth = d; return { node: it, children: [] }; });
+    const byId = new Map(list.map(x => [String(x.node.id), x]));
+    const roots = [];
+    list.forEach(x => {
+      const it = x.node; const pid = String(it.parentId || '');
+      if (it.depth > 1 && pid && byId.has(pid)) {
+        const parent = byId.get(pid);
+        if (parent.node.depth < it.depth) { parent.children.push(x); it.parentId = pid; return; }
+      }
+      it.depth = 1; it.parentId = null; roots.push(x);
+    });
+    return roots;
+  }
+  function kbWalkTree(roots, cb){
+    const out = [];
+    roots.forEach((n1, i1) => {
+      out.push(cb(n1.node, `${i1+1}`, 1));
+      (n1.children||[]).forEach((n2, i2) => {
+        out.push(cb(n2.node, `${i1+1}.${i2+1}`, 2));
+        (n2.children||[]).forEach((n3, i3) => out.push(cb(n3.node, `${i1+1}.${i2+1}.${i3+1}`, 3)));
+      });
+    });
+    return out;
   }
   function kbTotalCount() { return appData.chapters.reduce((n, ch) => n + ((ch.items || []).length), 0); }
   function renderNav() {
@@ -1623,7 +1731,7 @@ renderDoc();
           <span class="ch-count">${(ch.items || []).length}</span><span class="fold-arrow">▸</span>
         </button>
         <div class="sub-toc">
-          ${(ch.items || []).map((it, ii) => `<a href="#item-${kbEsc(it.id)}" data-item="${kbEsc(it.id)}" data-ch="${kbEsc(ch.id)}" title="${kbEsc(it.title)}"><span class="num">${ii+1}</span><span class="label">${kbEsc(it.title)}</span></a>`).join('')}
+          ${kbWalkTree(kbBuildTree(ch.items), (it, num, depth) => `<a href="#item-${kbEsc(it.id)}" data-item="${kbEsc(it.id)}" data-ch="${kbEsc(ch.id)}" title="${kbEsc(it.title)}" class="toc-depth-${depth}"><span class="num">${num}</span><span class="label">${kbEsc(it.title)}</span></a>`).join('')}
         </div>`;
       box.appendChild(block);
       const row = block.querySelector('.chapter-row');
@@ -1656,28 +1764,31 @@ renderDoc();
     let visibleCount = 0;
     const visibleItems = [];
     chapters.forEach(ch => {
-      const items = (ch.items || []).filter(it => kbMatches(ch, it, terms));
-      if (!items.length) return;
-      visibleCount += items.length;
+      const matched = new Set();
+      (ch.items || []).forEach(it => { if (kbMatches(ch, it, terms)) matched.add(String(it.id)); });
+      if (!matched.size) return;
+      visibleCount += matched.size;
       const sec = document.createElement('section');
       sec.className = 'sec-block'; sec.id = 'sec-' + ch.id; sec.dataset.chapter = ch.id;
-      sec.innerHTML = `<div class="sec-h"><h2>${kbEsc(ch.title)}</h2><span class="shown">${items.length} 条</span></div>`;
+      sec.innerHTML = `<div class="sec-h"><h2>${kbEsc(ch.title)}</h2><span class="shown">${matched.size} 条</span></div>`;
       body.appendChild(sec);
-      items.forEach(it => {
+      kbWalkTree(kbBuildTree(ch.items), (it, num, depth) => {
+        if (!matched.has(String(it.id))) return;
         visibleItems.push({ch, it});
         const card = document.createElement('article');
-        card.className = 'card'; card.id = 'item-' + it.id; card.dataset.itemId = it.id; card.dataset.chapterId = ch.id;
+        card.className = 'card card-depth-' + depth; card.id = 'item-' + it.id; card.dataset.itemId = it.id; card.dataset.chapterId = ch.id;
         const level = kbNormalizeLevel(it.level), favorite = kbFavorites.has(String(it.id));
         const updateDate = kbFormatDate(it.updatedAt);
         const content = kbSanitizeHTML(it.content || '');
         const tags = (it.tags || []).map(t => `<button type="button" class="tag ${kbState.tags.has(String(t)) ? 'active' : ''}" data-kb-tag="${kbEsc(t)}" aria-pressed="${kbState.tags.has(String(t))}" title="按标签筛选：${kbEsc(t)}">${kbEsc(t)}</button>`).join('');
-        const levelLabel = level === 'normal' ? '' : `<span class="badge ${level}">${LEVEL_NAMES[level]}</span>`;
+        const lc = kbLevelConfig(level);
+        const levelLabel = level === 'normal' ? '' : `<span class="badge" style="color:${lc.color};background:${lc.soft}">${kbEsc(lc.name)}</span>`;
         const dateBadge = updateDate ? `<span class="kb-date">更新于 ${updateDate}</span>` : '';
         card.innerHTML = `
           <div class="card-title kb-card-heading">
-            <span class="kb-title-text">${kbEsc(it.title)}</span>
+            <span class="kb-item-num">${num}</span><span class="kb-title-text">${kbEsc(it.title)}</span>
             ${levelLabel}
-            <a class="kb-anchor" href="#item-${kbEsc(it.id)}" aria-label="本条链接" title="本条链接">↗</a>
+            <a class="kb-anchor" href="#item-${kbEsc(it.id)}" data-kb-copy-link="${kbEsc(it.id)}" aria-label="本条链接" title="本条链接">↗</a>
             <button type="button" class="kb-fav ${favorite ? 'active' : ''}" data-kb-fav="${kbEsc(it.id)}" aria-label="${favorite ? '取消收藏' : '收藏条目'}" aria-pressed="${favorite}" title="${favorite ? '取消收藏' : '收藏条目'}">${favorite ? '★' : '☆'}</button>
           </div>
           <div class="kb-card-meta">${dateBadge}<span>${(it.tags || []).length ? `${(it.tags || []).length} 个标签` : '未设置标签'}</span></div>
@@ -1696,7 +1807,7 @@ renderDoc();
       const pieces = [];
       if (searchQ) pieces.push(`关键词：${searchQ}`);
       if (curChId) { const c = appData.chapters.find(x => x.id === curChId); if (c) pieces.push(c.title); }
-      if (kbState.levels.size) pieces.push([...kbState.levels].map(x => LEVEL_NAMES[x]).join('、'));
+      if (kbState.levels.size) pieces.push([...kbState.levels].map(x => kbLevelName(x)).join('、'));
       if (kbState.tags.size) pieces.push(`标签：${[...kbState.tags].join('、')}`);
       if (kbState.updatedDays) pieces.push(`${kbState.updatedDays} 天内更新`);
       if (kbState.favoritesOnly) pieces.push('我的收藏');
@@ -1809,6 +1920,17 @@ renderDoc();
     renderDoc();
     if (kbState.favoritesOnly && !kbFavorites.has(key)) toast('已取消收藏，该条目已从当前结果中移除');
   }
+  function kbCopyItemLink(iid) {
+    const base = location.href.split('#')[0];
+    const url = base + '#item-' + encodeURIComponent(iid);
+    const done = () => toast('已复制链接到剪贴板');
+    const fallback = () => {
+      const ta = document.createElement('textarea'); ta.value = url; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (_) { toast('复制失败，请手动复制地址栏链接'); }
+      ta.remove();
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done).catch(fallback); else fallback();
+  }
   function kbWire() {
     const sidebar = document.getElementById('sidebar');
     const theme = document.getElementById('themeToggle');
@@ -1847,6 +1969,8 @@ renderDoc();
       if (attachment) { ev.preventDefault(); ev.stopPropagation(); if (window.kbOpenAttachment) window.kbOpenAttachment(attachment.dataset.kbAttachment); return; }
       const attachmentImage = ev.target.closest('[data-kb-attachment-image]');
       if (attachmentImage) { const id = attachmentImage.dataset.kbAttachmentImage; if (window.kbOpenAttachment) { ev.preventDefault(); window.kbOpenAttachment(id); } return; }
+      const copyLink = ev.target.closest('[data-kb-copy-link]');
+      if (copyLink) { ev.preventDefault(); ev.stopPropagation(); kbCopyItemLink(copyLink.dataset.kbCopyLink); return; }
       const star = ev.target.closest('[data-kb-fav]');
       if (star) { kbToggleFavorite(star.dataset.kbFav); return; }
       const tag = ev.target.closest('[data-kb-tag]');
@@ -1950,6 +2074,15 @@ renderDoc();
       <div class="f-group"><label>修改管理密码</label><input type="password" id="sPass" autocomplete="new-password" placeholder="留空则不修改"></div>
       <div class="kb-filter-hint">密码以加盐哈希保存在本地/云端，页面不保存明文；离线 HTML 的校验仅用于防止误操作，不等同于服务器端安全认证。</div>
       <div style="border-top:1px solid var(--divider);margin:16px 0;padding-top:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:14px;font-weight:600;">重要程度自定义（可增删档位）</div>
+          <button type="button" class="btn btn-sm" onclick="kbAddLevelRow()">+ 新增档位</button>
+        </div>
+        <div id="lvRows">
+          ${kbLevelList().map(x => { const c = kbLevelConfig(x.key); const del = x.key === 'normal' ? '<span style="opacity:.4;font-size:12px;align-self:center;">默认档不可删</span>' : `<button type="button" class="btn btn-sm btn-danger" onclick="kbRemoveLevelRow(this)">删除</button>`; return `<div class="f-row lv-row" data-lv-key="${kbEsc(x.key)}" style="margin-bottom:10px;"><div class="f-group"><label>名称</label><input type="text" class="lv-name" value="${kbEsc(c.name)}"></div><div class="f-group"><label>颜色</label><input type="color" class="lv-color" value="${c.color}"></div><div class="f-group" style="justify-content:flex-end;">${del}</div></div>`; }).join('')}
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--divider);margin:16px 0;padding-top:16px;">
         <div style="font-size:14px;font-weight:600;margin-bottom:10px;">☁️ 云同步（多设备共享）</div>
         <p style="font-size:12px;color:var(--t3);margin-bottom:12px;">在 Supabase 创建项目后，把 Project URL 和 Publishable Key 填进来，所有设备打开都读同一份数据。不填则仅保存在本地浏览器。</p>
         <div class="f-group"><label>Supabase Project URL</label><input type="text" id="sCloudUrl" value="${esc(cloudConfig.url)}" placeholder="https://xxxx.supabase.co"></div>
@@ -1961,9 +2094,16 @@ renderDoc();
   };
   /* 删除内容后同步筛选项与收藏集合。 */
   delItem = function (iid) {
-    if (!confirm('确定删除这个条目吗？')) return;
+    if (!confirm('确定删除这个条目及其下级子条目吗？')) return;
     const ch = appData.chapters.find(c => c.id === curChId); if (!ch) return;
-    ch.items = ch.items.filter(i => i.id !== iid); kbFavorites.delete(String(iid)); kbStoreFavorites();
+    const doomed = new Set([String(iid)]);
+    let changed = true;
+    while (changed) { changed = false;
+      (ch.items || []).forEach(it => { const pid = String(it.parentId || ''); if (pid && doomed.has(pid) && !doomed.has(String(it.id))) { doomed.add(String(it.id)); changed = true; } });
+    }
+    ch.items = (ch.items || []).filter(i => !doomed.has(String(i.id)));
+    doomed.forEach(id => kbFavorites.delete(id));
+    kbStoreFavorites();
     kbSave(); renderAdminItems(); renderAdminChs(); renderNav(); renderDoc(); toast('条目已删除');
   };
 
@@ -1973,7 +2113,10 @@ renderDoc();
   window.handleSearch = handleSearch;
   window.copyToc = function () {
     let text = `【${appData.bookTitle}】目录：\n\n`;
-    appData.chapters.forEach((ch, i) => { text += `${i+1}. ${ch.title}\n`; (ch.items || []).forEach((it, j) => { text += `   ${i+1}.${j+1} ${it.title}\n`; }); });
+    appData.chapters.forEach((ch, i) => {
+      text += `${i+1}. ${ch.title}\n`;
+      kbWalkTree(kbBuildTree(ch.items), (it, num, depth) => { const indent = '   '.repeat(depth - 1); text += `${indent}${num} ${it.title}\n`; });
+    });
     text += `\n请根据以上知识库目录，回答我的问题：`;
     const fallback = () => { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); toast('目录已复制，去豆包粘贴提问吧'); } catch (_) { toast('复制失败，请手动选择目录文本'); } ta.remove(); };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => toast('目录已复制，去豆包粘贴提问吧')).catch(fallback); else fallback();
@@ -1986,6 +2129,11 @@ renderDoc();
   window.kbUpdateURL = kbUpdateURL;
   window.kbRenderFilters = kbRenderFilters;
   window.kbNormalizeLevel = kbNormalizeLevel;
+  window.kbLevelConfig = kbLevelConfig;
+  window.kbLevelList = kbLevelList;
+  window.kbBuildTree = kbBuildTree;
+  window.kbWalkTree = kbWalkTree;
+  window.kbLevelName = kbLevelName;
   window.kbEsc = kbEsc;
   window.kbMigrateData = kbMigrateData;
   /* 初次载入：不改知识库内容，只补兼容字段、读取筛选地址和渲染增强界面。 */
@@ -2028,6 +2176,18 @@ renderDoc();
   .modal-box { padding:16px; }
   .f-row { grid-template-columns:minmax(0,1fr); }
 }
+
+/* 平板（769–1024px）后台双列收窄并防溢出 */
+@media (min-width:769px) and (max-width:1024px){
+  .admin-grid{ grid-template-columns:190px minmax(0,1fr); gap:14px; }
+  .admin-side{ padding:8px; min-width:0; }
+  .admin-main{ padding:14px; min-width:0; }
+  .admin-item-row{ flex-wrap:wrap; gap:8px; }
+  .admin-item-row .info{ min-width:0; flex:1 1 100%; }
+  .admin-item-row .ops{ width:100%; justify-content:flex-end; }
+  .admin-ch-row{ min-width:0; }
+  .f-row{ grid-template-columns:minmax(0,1fr); }
+}
 </style>
 <script>
 /* ===== 离线文件导入、附件存储、链接识别与多格式导出 ===== */
@@ -2038,6 +2198,7 @@ renderDoc();
   let dbPromise = null;
   const URL_OBJECTS = new Set();
   const LEVEL_TEXT = {important:'重要', warning:'注意', normal:'普通'};
+  const levelText = k => { try { return window.kbLevelName ? window.kbLevelName(k) : (LEVEL_TEXT[k] || k); } catch (_) { return LEVEL_TEXT[k] || k; } };
 
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function extension(name){ const m = String(name||'').toLowerCase().match(/\.([^.]+)$/); return m ? m[1] : ''; }
@@ -2281,10 +2442,18 @@ renderDoc();
   function localInputDate(v){ if(!v)return ''; const d=new Date(v); if(Number.isNaN(d.getTime()))return ''; const z=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`; }
   window.editItem=function(iid){
     const ch=appData.chapters.find(c=>c.id===curChId); if(!ch){toastMsg('请先在左侧选择一个章节');return;}
-    const isNew=String(iid)==='-1'; const it=isNew?{title:'',content:'',tags:[],level:'normal',updatedAt:''}:ch.items.find(i=>String(i.id)===String(iid)); if(!it)return;
+    const isNew=String(iid)==='-1'; let it=isNew?{title:'',content:'',tags:[],level:'normal',depth:1,parentId:null,updatedAt:''}:ch.items.find(i=>String(i.id)===String(iid)); if(!it)return;
+    it.depth=[1,2,3].includes(Number(it.depth))?Number(it.depth):1; it.parentId=it.parentId?String(it.parentId):null;
+    const parentOptions=(ch.items||[]).filter(x=>String(x.id)!==String(iid)).map(x=>{const d=[1,2,3].includes(Number(x.depth))?Number(x.depth):1;const lbl=['','一级','二级','三级'][d]+' · '+(x.title||'');return `<option value="${esc(x.id)}" ${String(it.parentId)===String(x.id)?'selected':''}>${esc(lbl)}</option>`;}).join('');
     document.getElementById('modalBox').innerHTML=`
       <h3>${isNew?'新增条目':'编辑条目'}</h3>
       <div class="f-group"><label>条目标题</label><input type="text" id="fItTitle" value="${esc(it.title)}" placeholder="条目标题"></div>
+      <div class="f-row"><div class="f-group"><label>条目层级</label><select id="fItDepth">
+          <option value="1" ${it.depth===1?'selected':''}>一级条目</option>
+          <option value="2" ${it.depth===2?'selected':''}>二级子条目</option>
+          <option value="3" ${it.depth===3?'selected':''}>三级子条目</option>
+        </select></div>
+        <div class="f-group"><label>上级条目</label><select id="fItParent"><option value="">（无，作为一级）</option>${parentOptions}</select></div></div>
       <div class="f-group"><label>正文（纯文本 / HTML / 图片 / 文档，可直接粘贴文字与图片）</label>
         <div class="kb-ed-toolbar">
           <select class="kb-ed-select" title="字体" onchange="kbEdFontFamily(this.value); this.value='';">
@@ -2344,7 +2513,7 @@ renderDoc();
         <input type="file" id="fItDocFile" accept=".docx,.pdf,.txt,.md,.csv,.html,.htm,.xlsx,.pptx" style="display:none" onchange="kbEdDocPicked(this)">
       </div>
       <div class="f-row"><div class="f-group"><label>标签（逗号分隔）</label><input type="text" id="fItTags" value="${esc((it.tags||[]).join(', '))}" placeholder="安全, 流程"></div>
-      <div class="f-group"><label>重要程度</label><select id="fItLevel"><option value="normal" ${it.level==='normal'?'selected':''}>普通</option><option value="important" ${it.level==='important'?'selected':''}>重要</option><option value="warning" ${it.level==='warning'?'selected':''}>注意</option></select></div></div>
+      <div class="f-group"><label>重要程度</label><select id="fItLevel">${window.kbLevelList().map(x=>`<option value="${kbEsc(x.key)}" ${it.level===x.key?'selected':''}>${kbEsc(window.kbLevelConfig(x.key).name)}</option>`).join('')}</select></div></div>
       <div class="f-group"><label>最近更新时间（用于“最近更新”筛选）</label><input type="datetime-local" id="fItUpdated" value="${localInputDate(it.updatedAt)}"><div class="kb-filter-hint">手动选择日期可调整筛选结果；留空时，保存操作会自动记录当前时间。</div></div>
       ${(it.attachments||[]).length?`<div class="f-group"><label>附件</label><div>${it.attachments.map(a=>`<div>📎 ${esc(a.name)}（${formatSize(a.size||0)}）</div>`).join('')}</div></div>`:''}
       <div class="modal-btns"><button class="btn" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveItem('${esc(iid)}')">保存</button></div>`;
@@ -2380,9 +2549,18 @@ renderDoc();
     rawContent=rawContent.replace(/^(<br\s*\/?>)+/,'').replace(/(<br\s*\/?>)+$/,'').replace(/^<p><br\s*\/?><\/p>$/,'').trim();
     const content=autoLinkHTML(rawContent);
     const tags=[...new Set(document.getElementById('fItTags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean))];
-    const level=document.getElementById('fItLevel').value; const dateInput=document.getElementById('fItUpdated').value; const updatedAt=dateInput?new Date(dateInput).toISOString():new Date().toISOString(); const now=new Date().toISOString();
-    if(String(iid)==='-1')ch.items.push({id:genId(),title,content,tags,level,createdAt:now,updatedAt});
-    else { const it=ch.items.find(i=>String(i.id)===String(iid)); if(it){it.title=title;it.content=content;it.tags=tags;it.level=level;it.updatedAt=updatedAt;} }
+    const level=window.kbNormalizeLevel?window.kbNormalizeLevel(document.getElementById('fItLevel').value):document.getElementById('fItLevel').value;
+    const dateInput=document.getElementById('fItUpdated').value; const updatedAt=dateInput?new Date(dateInput).toISOString():new Date().toISOString(); const now=new Date().toISOString();
+    let depth=Number(document.getElementById('fItDepth').value); if(depth!==2&&depth!==3)depth=1;
+    let parentId=document.getElementById('fItParent').value||null;
+    if(depth===1){parentId=null;}
+    else {
+      const parent=ch.items.find(i=>String(i.id)===String(parentId));
+      if(!parent){depth=1;parentId=null;}
+      else { const pd=[1,2,3].includes(Number(parent.depth))?Number(parent.depth):1; if(pd!==depth-1){ if(depth===2){depth=1;parentId=null;} else { parentId=String(parent.id); depth=Math.min(pd+1,3); } } }
+    }
+    if(String(iid)==='-1')ch.items.push({id:genId(),title,content,tags,level,depth,parentId,createdAt:now,updatedAt});
+    else { const it=ch.items.find(i=>String(i.id)===String(iid)); if(it){it.title=title;it.content=content;it.tags=tags;it.level=level;it.depth=depth;it.parentId=parentId;it.updatedAt=updatedAt;} }
     try{appData.updatedAt=new Date().toISOString();save();}catch(e){toastMsg('保存失败：浏览器本地存储空间可能不足，请先导出数据');}
     closeModal(); renderAdminItems(); renderAdminChs(); renderNav(); renderDoc(); toastMsg('条目已保存');
   };
@@ -2453,7 +2631,7 @@ renderDoc();
         if(d && d.format==='h5-kb-backup-with-attachments-v1' && d.appData){incoming=d.appData;attachments=d.attachments||{};}
         else incoming=d;
         if(!incoming||!Array.isArray(incoming.chapters))throw new Error('文件不是有效的知识库 JSON 备份');
-        appData=incoming; appData.updatedAt=new Date().toISOString(); if(!Array.isArray(appData.attachmentsMeta))appData.attachmentsMeta=[];
+        appData=incoming; appData.updatedAt=new Date().toISOString(); if(!Array.isArray(appData.attachmentsMeta))appData.attachmentsMeta=[]; if(window.kbMigrateData)window.kbMigrateData();
         for(const [id,a] of Object.entries(attachments)){if(a&&a.dataUrl){const blob=dataURLToBlob(a.dataUrl);await putAttachment(id,blob,{name:a.name,type:a.type,size:a.size});}}
         if(typeof kbMigrateData==='function'){} /* Migration in the main reader will run at load; normalize common fields here. */
         save(); curChId=null; openChId=null; searchQ=''; const inp=document.getElementById('searchInput');if(inp)inp.value='';
@@ -2510,7 +2688,7 @@ renderDoc();
       const old=document.getElementById('kbPrintExport');if(old)old.remove();
       const box=document.createElement('div');box.id='kbPrintExport';
       let html=`<h1>${esc(appData.bookTitle||'知识库')}</h1><p>${esc(appData.bookDesc||'')}</p><p>导出时间：${new Date().toLocaleString()}</p>`;
-      (appData.chapters||[]).forEach((ch,ci)=>{html+=`<h2>${ci+1}. ${esc(ch.title)}</h2>`;(ch.items||[]).forEach((it,ii)=>{html+=`<article><h3>${ci+1}.${ii+1} ${esc(it.title)}${it.level&&it.level!=='normal'?' · '+LEVEL_TEXT[it.level]:''}</h3><div>${resolveHTMLForPrint(it.content||'','print')}</div>${(it.tags||[]).length?`<p><small>标签：${(it.tags||[]).map(esc).join('、')}</small></p>`:''}</article>`;});});
+      (appData.chapters||[]).forEach((ch,ci)=>{html+=`<h2>${ci+1}. ${esc(ch.title)}</h2>`;(ch.items||[]).forEach((it,ii)=>{html+=`<article><h3>${ci+1}.${ii+1} ${esc(it.title)}${it.level&&it.level!=='normal'?' · '+levelText(it.level):''}</h3><div>${resolveHTMLForPrint(it.content||'','print')}</div>${(it.tags||[]).length?`<p><small>标签：${(it.tags||[]).map(esc).join('、')}</small></p>`:''}</article>`;});});
       box.innerHTML=html;document.body.appendChild(box);
       const clean=()=>{if(box.isConnected)box.remove();window.removeEventListener('afterprint',clean);};window.addEventListener('afterprint',clean);setTimeout(()=>{try{window.print();}finally{setTimeout(clean,120000);}},100);
       toastMsg('已打开打印窗口，请在打印目标中选择“另存为 PDF”。');
@@ -2547,7 +2725,7 @@ renderDoc();
       for(let ci=0;ci<(appData.chapters||[]).length;ci++){
         const ch=appData.chapters[ci];let body=`<h1>${xmlEsc(ch.title)}</h1>`;
         for(let ii=0;ii<(ch.items||[]).length;ii++){
-          const it=ch.items[ii]; const rich=resolveHTMLForPrint(it.content||'','epub',attachmentPaths); body+=`<article><h2>${xmlEsc(it.title)}</h2>${it.level&&it.level!=='normal'?`<p><strong>重要程度：${xmlEsc(LEVEL_TEXT[it.level]||it.level)}</strong></p>`:''}<div>${toXhtmlFragment(rich)}</div>${(it.tags||[]).length?`<p><small>标签：${(it.tags||[]).map(xmlEsc).join('、')}</small></p>`:''}</article>`;
+          const it=ch.items[ii]; const rich=resolveHTMLForPrint(it.content||'','epub',attachmentPaths); body+=`<article><h2>${xmlEsc(it.title)}</h2>${it.level&&it.level!=='normal'?`<p><strong>重要程度：${xmlEsc(levelText(it.level))}</strong></p>`:''}<div>${toXhtmlFragment(rich)}</div>${(it.tags||[]).length?`<p><small>标签：${(it.tags||[]).map(xmlEsc).join('、')}</small></p>`:''}</article>`;
         }
         const chapterName=`chapter${ci+1}.xhtml`;manifest.push(`<item id="ch${ci+1}" href="${chapterName}" media-type="application/xhtml+xml"/>`);spine.push(`<itemref idref="ch${ci+1}"/>`);
         files.push({name:'OEBPS/'+chapterName,data:`<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN" lang="zh-CN"><head><title>${xmlEsc(ch.title)}</title><link rel="stylesheet" type="text/css" href="style.css"/>
