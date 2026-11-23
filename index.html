@@ -293,6 +293,7 @@ html.dark .admin-tool-btn:hover { background: rgba(255,255,255,.055); }
   background: var(--bg); border-radius: var(--radius); padding: 22px;
   width: 100%; max-width: 560px;
 }
+.modal-box.modal-wide { max-width: 1300px; margin-top: 24px; }
 .modal-box h3 { font-size: 16px; margin-bottom: 18px; }
 .f-group { margin-bottom: 14px; }
 .f-group label { display: block; font-size: 13px; color: var(--t2); margin-bottom: 4px; }
@@ -367,7 +368,7 @@ html.dark .kb-hit { background:rgba(234,179,8,.30); color:inherit; }
 .kb-ed-toolbar .btn-sm { min-height:30px; }
 .kb-ed-img-ops { display:inline-flex; gap:6px; align-items:center; }
 .kb-ed-toolbar .kb-ed-break { flex-basis:100%; height:0; }
-.kb-rich-editor { min-height:150px; max-height:46vh; overflow:auto; border:1px solid var(--divider); border-radius:8px; background:var(--bg-soft); padding:10px 12px; line-height:1.7; font-size:14px; outline:none; }
+.kb-rich-editor { min-height:182px; max-height:56vh; overflow:auto; border:1px solid var(--divider); border-radius:8px; background:var(--bg-soft); padding:10px 12px; line-height:1.7; font-size:14px; outline:none; }
 .kb-rich-editor:focus { border-color:var(--brand); }
 .kb-rich-editor p { margin:0 0 8px; }
 .kb-rich-editor img { max-width:100%; height:auto; border-radius:8px; margin:8px 0; display:block; }
@@ -1422,7 +1423,7 @@ function insertAttachmentIntoEditor(input) {
   };
   reader.readAsDataURL(file);
 }
-function closeModal() { document.getElementById('modalMask').classList.remove('active'); }
+function closeModal() { document.getElementById('modalMask').classList.remove('active'); document.getElementById('modalBox').classList.remove('modal-wide'); }
 document.getElementById('modalMask').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
 
 // 初始化
@@ -2441,6 +2442,7 @@ renderDoc();
 
   function localInputDate(v){ if(!v)return ''; const d=new Date(v); if(Number.isNaN(d.getTime()))return ''; const z=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`; }
   window.editItem=function(iid){
+    document.getElementById('modalBox').classList.add('modal-wide');
     const ch=appData.chapters.find(c=>c.id===curChId); if(!ch){toastMsg('请先在左侧选择一个章节');return;}
     const isNew=String(iid)==='-1'; let it=isNew?{title:'',content:'',tags:[],level:'normal',depth:1,parentId:null,updatedAt:''}:ch.items.find(i=>String(i.id)===String(iid)); if(!it)return;
     it.depth=[1,2,3].includes(Number(it.depth))?Number(it.depth):1; it.parentId=it.parentId?String(it.parentId):null;
