@@ -836,30 +836,28 @@ async function pushToCloud(data) {
 
 function load() {
   loadCloudConfig();
+  // 首屏优先使用本地缓存（上一次成功云同步并落盘的界面）；仅在无缓存时才用内嵌种子或示例数据，
+  // 避免内嵌旧数据覆盖上一次同步结果。
   try {
-    if (window.__KB_EMBEDDED_DATA__ && Array.isArray(window.__KB_EMBEDDED_DATA__.chapters)) {
+    const s = localStorage.getItem(KEY);
+    if (s) {
+      appData = JSON.parse(s);
+    } else if (window.__KB_EMBEDDED_DATA__ && Array.isArray(window.__KB_EMBEDDED_DATA__.chapters)) {
       appData = JSON.parse(JSON.stringify(window.__KB_EMBEDDED_DATA__));
       try { save(); } catch (_) {}
     } else {
-      const s = localStorage.getItem(KEY);
-      if (s) appData = JSON.parse(s);
-      else { appData = sampleData(); save(); }
+      appData = sampleData(); save();
     }
   } catch(e) { appData = sampleData(); }
-  // 异步从云端拉最新数据，仅当云端版本不早于本地时覆盖，避免离线编辑被旧数据冲掉
+  // 启动后从云端拉取最新内容：云端有效即采用并落盘，作为下次打开的基准；拉取失败则保留本地缓存（上次同步界面）。
   if (initCloud()) {
     pullFromCloud().then(cloudData => {
-      if (cloudData && cloudData.chapters) {
-        const localT = _kbTs(appData.updatedAt);
-        const cloudT = _kbTs(cloudData.updatedAt);
-        const shouldPull = (!localT || !cloudT || cloudT >= localT);
-        if (shouldPull) {
-          appData = cloudData;
-          if (typeof kbMigrateData === 'function') kbMigrateData();
-          try { save(); } catch(e) {}
-          renderNav(); renderDoc();
-          toast('已从云端同步最新内容');
-        }
+      if (cloudData && Array.isArray(cloudData.chapters)) {
+        appData = cloudData;
+        if (typeof kbMigrateData === 'function') kbMigrateData();
+        try { save(); } catch(e) {}
+        renderNav(); renderDoc();
+        toast('已从云端同步最新内容');
       }
     });
   }
