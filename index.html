@@ -337,17 +337,25 @@ body.kb-resizing, body.kb-resizing * { cursor: col-resize !important; user-selec
 /* ===== 编辑器颜色 / 高亮弹层 ===== */
 .kb-color-pop {
   position: fixed; z-index: 160; background: var(--bg); border: 1px solid var(--divider);
-  border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.18); padding: 14px; width: 250px; display: none;
+  border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.18); padding: 14px; width: 272px; display: none;
 }
 .kb-color-pop.active { display: block; }
 .kb-color-pop .cp-title { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
-.kb-color-pop .cp-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-.kb-color-pop .cp-swatch { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--divider); cursor: pointer; padding: 0; }
+.kb-color-pop .cp-none {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 10px; margin-bottom: 10px;
+  border: 1px solid var(--divider); border-radius: 8px; background: var(--bg-soft, var(--bg)); cursor: pointer;
+  font-size: 13px; color: var(--t2); text-align: left;
+}
+.kb-color-pop .cp-none:hover { background: var(--divider); }
+.kb-color-pop .cp-none-ico { font-weight: 700; width: 16px; text-align: center; }
+.kb-color-pop .cp-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.kb-color-pop .cp-swatch {
+  aspect-ratio: 1 / 1; border-radius: 6px; border: 1px solid var(--divider); cursor: pointer; padding: 0;
+}
 .kb-color-pop .cp-swatch:hover { outline: 2px solid var(--brand); }
-.kb-color-pop .cp-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.kb-color-pop .cp-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
 .kb-color-pop .cp-row input[type=color] { width: 42px; height: 30px; padding: 0; border: 1px solid var(--divider); border-radius: 6px; background: none; }
-.kb-color-pop .cp-row .cp-preview { width: 34px; height: 30px; border: 1px solid var(--divider); border-radius: 6px; }
-.kb-color-pop .cp-btns { display: flex; justify-content: flex-end; gap: 8px; }
+.kb-color-pop .cp-row .cp-hint { font-size: 12px; color: var(--t3, var(--t2)); }
 .kb-formula-pop {
   position: fixed; z-index: 160; background: var(--bg); border: 1px solid var(--divider);
   border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.18); padding: 16px; width: 440px; max-width: calc(100vw - 32px);
@@ -2571,63 +2579,153 @@ kbInitSideResizers();
     if(!kbEdSelectedImg){ toastMsg('请先点击选中一张图片'); return; }
     kbEdSelectedImg.style.width=w;
   };
+  /* ===== 选区捕获 / 样式包裹（先选中文字，再应用颜色） ===== */
+  let kbSavedRange = null;
+  function kbEdCaptureSelection(){
+    const root = kbEdRoot(); if(!root) return false;
+    const sel = window.getSelection();
+    if(!sel.rangeCount) return false;
+    const range = sel.getRangeAt(0);
+    if(range.collapsed) return false;
+    if(!root.contains(range.commonAncestorContainer)) return false;
+    kbSavedRange = range.cloneRange();
+    return true;
+  }
+  function kbEdRestoreSelection(){
+    const root = kbEdRoot(); if(!root) return false;
+    const sel = window.getSelection();
+    let range = null;
+    if(sel.rangeCount && !sel.getRangeAt(0).collapsed && root.contains(sel.getRangeAt(0).commonAncestorContainer)){
+      range = sel.getRangeAt(0);
+    } else if(kbSavedRange){
+      sel.removeAllRanges();
+      sel.addRange(kbSavedRange);
+      range = kbSavedRange;
+    }
+    if(!range || range.collapsed) return false;
+    root.focus();
+    return true;
+  }
+  // 遍历选区相交的文本节点，逐个包裹带样式的 span
+  function kbEdWrapSelected(prop, value){
+    if(!kbEdRestoreSelection()){ toastMsg('请先选中要设置的文字'); return false; }
+    const root = kbEdRoot();
+    const sel = window.getSelection();
+    const range = sel.getRangeAt(0);
+    const texts = [];
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: function(n){
+        if(!n.nodeValue || !n.nodeValue.length) return NodeFilter.FILTER_REJECT;
+        return range.intersectsNode(n) ? NodeFilter.FILTER_ACCEPT : NodeFilter.REJECT;
+      }
+    });
+    let t; while((t = walker.nextNode())) texts.push(t);
+    if(!texts.length){ toastMsg('未选中有效文字'); return false; }
+    texts.forEach(function(node, idx){
+      let s = 0, e = node.nodeValue.length;
+      if(idx === 0 && range.startContainer === node) s = range.startOffset;
+      if(idx === texts.length - 1 && range.endContainer === node) e = range.endOffset;
+      if(e <= s) return;
+      const r = document.createRange();
+      r.setStart(node, s); r.setEnd(node, e);
+      const span = document.createElement('span');
+      span.style[prop] = value;
+      try { r.surroundContents(span); }
+      catch(err){
+        const frag = r.extractContents();
+        span.appendChild(frag);
+        r.insertNode(span);
+      }
+    });
+    return true;
+  }
+  // 移除选区内指定内联样式属性，并解包变空的 span
+  function kbEdStripSelected(prop){
+    if(!kbEdRestoreSelection()){ toastMsg('请先选中要清除的文字'); return false; }
+    const root = kbEdRoot();
+    const sel = window.getSelection();
+    const range = sel.getRangeAt(0);
+    const els = [];
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, {
+      acceptNode: function(n){ return range.intersectsNode(n) ? NodeFilter.FILTER_ACCEPT : NodeFilter.REJECT; }
+    });
+    let e; while((e = walker.nextNode())) els.push(e);
+    els.forEach(function(el){
+      if(el.style && el.style[prop]) el.style.removeProperty(prop);
+    });
+    root.querySelectorAll('span').forEach(function(sp){
+      if(!sp.getAttribute('style') && !sp.className){
+        while(sp.firstChild) sp.parentNode.insertBefore(sp.firstChild, sp);
+        sp.remove();
+      }
+    });
+    return true;
+  }
   function kbEdApplyStyle(cssText){
-    const root=kbEdRoot(); if(!root) return; root.focus();
-    const sel=window.getSelection(); if(!sel.rangeCount || sel.getRangeAt(0).collapsed){ toastMsg('请先选中要设置的文字'); return; }
-    const range=sel.getRangeAt(0);
-    const frag=range.extractContents();
-    const span=document.createElement('span');
-    span.style.cssText=cssText;
-    span.appendChild(frag);
-    range.insertNode(span);
-    sel.removeAllRanges();
+    const m = /^\s*([\w-]+)\s*:\s*(.+?)\s*$/.exec(cssText);
+    if(!m) return;
+    kbEdWrapSelected(m[1], m[2]);
   }
   window.kbEdFontFamily=function(v){ if(v) kbEdApplyStyle('font-family:'+v); };
   window.kbEdFontSize=function(v){ if(v) kbEdApplyStyle('font-size:'+v); };
-  window.kbEdColor=function(v){ if(v) kbEdApplyStyle('color:'+v); };
-  window.kbEdHilite=function(v){ if(v) kbEdApplyStyle('background-color:'+v); };
-  let kbColorPending = null;   // {kind, color} 先在调色盘选色，再选中正文文字即生效
-  const KB_COLOR_PRESETS = ['#d94848','#b8860b','#2f855a','#2563eb','#6b7280','#111827','#ffffff','#fff3a0','#fdecea'];
+  const KB_HILITE_COLORS = ['#d94848','#ed7d31','#ffd966','#70ad47','#4472c4','#203864','#7030a0','#f4b6c2','#c00000','#833c00','#7f6000','#00b0f0','#ffffff','#bfbfbf','#595959','#000000'];
+  const KB_TEXT_COLORS = ['#000000','#c00000','#ed7d31','#ffc000','#70ad47','#4472c4','#7030a0','#595959','#d94848','#ffd966','#203864','#f4b6c2','#833c00','#7f6000','#00b0f0','#ffffff'];
   function kbColorPopEl(){ return document.getElementById('kbColorPop'); }
   function kbCloseColorPop(){
     const el = kbColorPopEl(); if (el) { el.classList.remove('active'); el.innerHTML = ''; }
   }
-  function kbClearColorPending(){ kbColorPending = null; kbCloseColorPop(); }
+  function kbClearColorPending(){ kbSavedRange = null; kbCloseColorPop(); }
   window.kbClearColorPending = kbClearColorPending;
   window.kbEdOpenColor = function(kind, btn){
-    const root = kbEdRoot(); if (!root) return;
-    kbColorPending = { kind: kind, color: kind === 'hilite' ? '#fff3a0' : '#d94848' };
-    const el = kbColorPopEl(); if (!el) return;
-    const title = kind === 'hilite' ? '突出显示（先选颜色，再在正文选中文字生效）' : '文字颜色（先选颜色，再在正文选中文字生效）';
-    const presets = KB_COLOR_PRESETS.map(function(c){ return '<button type="button" class="cp-swatch" style="background:'+c+'" title="'+c+'" onclick="kbEdPickColor(\''+kind+'\',\''+c+'\')"></button>'; }).join('');
+    if(!kbEdCaptureSelection()){ toastMsg('请先在正文选中要' + (kind === 'hilite' ? '高亮' : '改色') + '的文字'); return; }
+    const el = kbColorPopEl(); if(!el) return;
+    const colors = kind === 'hilite' ? KB_HILITE_COLORS : KB_TEXT_COLORS;
+    const noneLabel = kind === 'hilite' ? '无（清除高亮）' : '自动（黑色）';
+    const noneCall = kind === 'hilite' ? "kbEdPickColor('hilite','')" : "kbEdPickColor('color','#000000')";
+    const swatches = colors.map(function(c){
+      return '<button type="button" class="cp-swatch" style="background:'+c+'" title="'+c+'" onclick="kbEdPickColor(\''+kind+'\',\''+c+'\')"></button>';
+    }).join('');
     el.innerHTML =
-      '<div class="cp-title">'+title+'</div>' +
-      '<div class="cp-presets">'+presets+'</div>' +
-      '<div class="cp-row"><input type="color" id="kbColorNative" value="'+kbColorPending.color+'" oninput="kbEdPickColor(\''+kind+'\',this.value)"><div class="cp-preview" id="kbColorPreview" style="background:'+kbColorPending.color+'"></div></div>';
+      '<div class="cp-title">' + (kind === 'hilite' ? '突出显示' : '文字颜色') + '</div>' +
+      '<button type="button" class="cp-none" onclick="'+noneCall+'"><span class="cp-none-ico">∅</span>'+noneLabel+'</button>' +
+      '<div class="cp-grid">'+swatches+'</div>' +
+      '<div class="cp-row"><input type="color" id="kbColorNative" onchange="kbEdPickColor(\''+kind+'\',this.value)"><span class="cp-hint">自定义颜色</span></div>';
     el.classList.add('active');
-    if (btn && btn.getBoundingClientRect) {
+    if(btn && btn.getBoundingClientRect){
       const r = btn.getBoundingClientRect();
-      el.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 262)) + 'px';
+      el.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 288)) + 'px';
       el.style.top = (r.bottom + 6) + 'px';
     } else {
       el.style.left = '50%'; el.style.top = '30%';
     }
   };
   window.kbEdPickColor = function(kind, c){
-    kbColorPending = { kind: kind, color: c };
+    const prop = kind === 'hilite' ? 'background-color' : 'color';
+    if(!c){ kbEdStripSelected(prop); } else { kbEdWrapSelected(prop, c); }
     kbCloseColorPop();
-    toastMsg('已选颜色，请在正文选中要'+(kind === 'hilite' ? '高亮' : '改色')+'的文字');
   };
-  window.kbEdMaybeApplyPending = function(){
-    if(!kbColorPending) return;
-    const root = kbEdRoot(); if(!root) return;
-    root.focus();
+  // 清除格式：先 execCommand 清粗斜体等，再手动剥除残留内联样式并解包空 span
+  window.kbEdClearFormat = function(){
+    if(!kbEdRestoreSelection()){ toastMsg('请先选中要清除格式的文字'); return; }
+    const root = kbEdRoot();
+    document.execCommand('styleWithCSS', false, true);
+    document.execCommand('removeFormat', false, null);
     const sel = window.getSelection();
-    if(!sel.rangeCount || sel.getRangeAt(0).collapsed) return;
-    if(!root.contains(sel.anchorNode) && !root.contains(sel.focusNode)) return;
-    const css = (kbColorPending.kind === 'hilite' ? 'background-color:' : 'color:') + kbColorPending.color;
-    kbEdApplyStyle(css);
-    kbColorPending = null;
+    const range = sel.rangeCount ? sel.getRangeAt(0) : null;
+    if(range){
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, {
+        acceptNode: function(n){ return range.intersectsNode(n) ? NodeFilter.FILTER_ACCEPT : NodeFilter.REJECT; }
+      });
+      let e; while((e = walker.nextNode())){
+        if(e.tagName === 'SPAN' && e.style) e.removeAttribute('style');
+      }
+    }
+    root.querySelectorAll('span').forEach(function(sp){
+      if(!sp.getAttribute('style') && !sp.className){
+        while(sp.firstChild) sp.parentNode.insertBefore(sp.firstChild, sp);
+        sp.remove();
+      }
+    });
   };
   document.addEventListener('mousedown', function(e){
     const el = kbColorPopEl();
@@ -2793,7 +2891,7 @@ kbInitSideResizers();
             <option value="3.0">3 倍</option>
           </select>
           <button type="button" class="btn btn-sm" onclick="kbEdInsertTable()">插入表格</button>
-          <button type="button" class="btn btn-sm" onclick="kbEdExec('removeFormat')" title="清除格式">清除格式</button>
+          <button type="button" class="btn btn-sm" onclick="kbEdClearFormat()" title="清除格式">清除格式</button>
           <button type="button" class="btn btn-sm" onclick="kbEdInsertImageClick()">插入图片</button>
           <button type="button" class="btn btn-sm" onclick="kbEdImportDocClick()">导入文档</button>
           <button type="button" class="btn btn-sm" onclick="document.getElementById('fItFiles').click()">导入文件</button>
@@ -2819,7 +2917,6 @@ kbInitSideResizers();
     document.getElementById('modalMask').classList.add('active');
     const edRoot = document.getElementById('fItContent');
     if (edRoot) {
-      edRoot.addEventListener('mouseup', () => { setTimeout(() => { if(window.kbEdMaybeApplyPending) window.kbEdMaybeApplyPending(); }, 0); });
       edRoot.addEventListener('keydown', ev => {
         /* 仅 Enter 产生段落换行；Shift/Ctrl/Alt+Enter 不插入软换行 <br>，统一按段落处理 */
         if(ev.key === 'Enter' && (ev.shiftKey || ev.ctrlKey || ev.altKey)){
