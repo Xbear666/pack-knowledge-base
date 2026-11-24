@@ -1,0 +1,24 @@
+# ===== 历史版本备份（不纳入仓库） =====
+_backup-*.html
+
+# ===== 一次性补丁 / 校验脚本 =====
+patch*.py
+check_*.js
+
+# ===== 早期遗留数据文件（当前 index.html 已自包含内联数据） =====
+data.js
+
+# ===== 命令调试输出 =====
+fetch.err
+fetch.out
+
+# ===== 发布副本目录（内容与根目录 index.html 同源，不重复跟踪） =====
+github-publish/
+
+# ===== 中文命名正本源文件（仓库统一以 index.html 跟踪） =====
+Pack设计规范.html
+
+# ===== 系统 / 编辑器杂物 =====
+.DS_Store
+Thumbs.db
+desktop.ini
