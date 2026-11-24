@@ -3,6 +3,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pack设计规范-V1.5</title>
+<link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%233451b2'/%3E%3Cpath d='M17 33l10 11 20-24' fill='none' stroke='white' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
 :root {
@@ -199,7 +200,8 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .reader-view.hidden { display: none; }
 
 .admin-wrap {
-  margin-top: var(--nav-h); padding: 24px; max-width: 1000px; margin-left: auto; margin-right: auto;
+  margin-top: var(--nav-h); padding: 24px 40px 120px; max-width: 1230px;
+  margin-left: auto; margin-right: auto;
 }
 .admin-login-box {
   max-width: 360px; margin: 60px auto; background: var(--bg);
@@ -346,6 +348,17 @@ body.kb-resizing, body.kb-resizing * { cursor: col-resize !important; user-selec
 .kb-color-pop .cp-row input[type=color] { width: 42px; height: 30px; padding: 0; border: 1px solid var(--divider); border-radius: 6px; background: none; }
 .kb-color-pop .cp-row .cp-preview { width: 34px; height: 30px; border: 1px solid var(--divider); border-radius: 6px; }
 .kb-color-pop .cp-btns { display: flex; justify-content: flex-end; gap: 8px; }
+.kb-formula-pop {
+  position: fixed; z-index: 160; background: var(--bg); border: 1px solid var(--divider);
+  border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.18); padding: 16px; width: 440px; max-width: calc(100vw - 32px);
+  display: none; left:50%; top:18%; transform: translateX(-50%);
+}
+.kb-formula-pop.active { display: block; }
+.kb-formula-pop .cp-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+.kb-formula-pop .f-group { margin-bottom: 12px; }
+.kb-formula-pop label { display:block; font-size:13px; color:var(--t2); margin-bottom:4px; }
+.kb-formula-pop select { width:100%; height:32px; border:1px solid var(--divider); border-radius:6px; background:var(--bg); padding:0 8px; }
+.kb-formula-pop .cp-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 
 /* 移动端 */
 @media (max-width: 768px) {
@@ -421,6 +434,14 @@ html.dark .kb-hit { background:rgba(234,179,8,.30); color:inherit; }
 .card-body table, .kb-rich-editor table { border-collapse:collapse; width:100%; margin:10px 0; }
 .card-body td, .card-body th, .kb-rich-editor td, .kb-rich-editor th { border:1px solid var(--divider); padding:6px 10px; font-size:13.5px; }
 .card-body th, .kb-rich-editor th { background:var(--bg-soft); font-weight:700; }
+
+/* 公式（LaTeX / MathML） */
+.kb-math { font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size:.92em; background:var(--bg-mute); border:1px dashed var(--divider); border-radius:5px; padding:0 5px; white-space:nowrap; }
+.kb-formula-block { display:block; text-align:center; margin:12px 0; overflow-x:auto; padding:4px 0; }
+.kb-formula-block .kb-math { white-space:normal; }
+.card-body math, .kb-rich-editor math { margin:0 2px; }
+.kb-formula-preview { border:1px solid var(--divider); border-radius:8px; background:var(--bg-soft); padding:12px; margin-top:10px; min-height:42px; font-size:15px; overflow-x:auto; }
+.kb-formula-editor textarea { width:100%; min-height:84px; resize:vertical; border:1px solid var(--divider); border-radius:6px; background:var(--bg); padding:8px 12px; font-family:ui-monospace,Consolas,monospace; font-size:13px; line-height:1.6; outline:none; }
 .chapter-row.all { margin-bottom:8px; border-bottom:1px solid var(--divider); border-radius:7px 7px 0 0; padding-bottom:10px; }
 .chapter-row .ch-title { white-space:normal; text-overflow:clip; line-height:1.5; }
 .sub-toc a .label { white-space:normal; text-overflow:clip; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
@@ -648,6 +669,7 @@ html.dark .kb-hit { background:rgba(234,179,8,.30); color:inherit; }
 </div>
 
 <div id="kbColorPop" class="kb-color-pop"></div>
+<div id="kbFormulaPop" class="kb-formula-pop"></div>
 <div class="toast" id="toast"></div>
 
 <script>window.__KB_EMBEDDED_DATA__={"bookTitle":"Pack设计规范-V1.5","bookDesc":"在这里查看储能Pack设计规范、操作规范和常见问题解答。","adminPassHash":"35f08677bf5d6aae3c6065901be987911458ed47215d779347a0cf6ac92a820c","chapters":[{"id":"ch1","title":"入职指南","items":[{"id":"i11","title":"公司组织架构","level":"normal","tags":["入门","组织"],"content":"\u003cp>公司设有研发中心、生产制造中心、质量管理部、供应链部、市场营销部和职能支持部门。\u003c/p>\u003cp>新员工入职后由部门主管介绍本部门架构和主要职责。\u003c/p>   https://sspai.com/?utm_source=wetab.link","updatedAt":"2026-11-10T03:21:33.568Z"},{"id":"i12","title":"办公系统使用","level":"important","tags":["工具","系统"],"content":"\u003cp>日常办公主要使用以下系统：\u003c/p>\u003cul>\u003cli>飞书：内部沟通、审批流程、文档协作\u003c/li>\u003cli>OA系统：请假、报销、考勤查询\u003c/li>\u003cli>知识库：技术文档、SOP、培训资料\u003c/li>\u003c/ul>"}]},{"id":"ch2","title":"产品与技术基础","items":[{"id":"i21","title":"储能PACK系统概述","level":"important","tags":["产品","储能"],"content":"\u003cp>储能PACK是储能系统的核心单元，由电芯、BMS、热管理系统、结构件和电气连接系统组成。\u003c/p>\u003cp>我们主要生产588Ah和648Ah电芯对应的标准PACK产品，应用于工商业储能和大储场景。\u003c/p>\u003cp>参考：\u003ca href=\"https://www.zhihu.com/topic/19813432\" target=\"_blank\">储能系统入门\u003c/a>\u003c/p>"},{"id":"i22","title":"高压安全注意事项","level":"warning","tags":["安全","高压"],"content":"\u003cp>储能系统涉及高压直流电，操作时必须遵守以下安全规范：\u003c/p>\u003col>\u003cli>操作前必须断电并验电\u003c/li>\u003cli>佩戴绝缘手套和护目镜\u003c/li>\u003cli>高压区域两人以上方可作业\u003c/li>\u003c/ol>"}]},{"id":"ch3","title":"常用操作流程","items":[{"id":"i31","title":"物料请购流程","level":"normal","tags":["流程","采购"],"content":"\u003cp>1. 在OA系统提交请购申请，注明物料编码、数量、需求日期\u003c/p>\u003cp>2. 部门主管审批\u003c/p>\u003cp>3. 采购部询价比价\u003c/p>\u003cp>4. 下单跟进到货\u003c/p>"}]}],"attachmentsMeta":[]};window.__KB_EMBEDDED_ATTACHMENTS__={};</script>
@@ -1562,8 +1584,9 @@ kbInitSideResizers();
     return { key: c.key, name: nm, color: kbSafeColor(c.color, d.color), soft: kbSafeColor(c.soft, d.soft) };
   }
   function kbLevelName(key){ return kbLevelConfig(key).name; }
-  const ALLOWED_TAGS = new Set(['A','P','BR','HR','STRONG','B','EM','I','U','S','DEL','INS','H1','H2','H3','H4','H5','H6','UL','OL','LI','BLOCKQUOTE','PRE','CODE','TABLE','THEAD','TBODY','TFOOT','TR','TH','TD','DIV','SPAN','IMG','SUP','SUB','SMALL','DL','DT','DD']);
-  const DROP_TAGS = new Set(['SCRIPT','STYLE','IFRAME','OBJECT','EMBED','FORM','INPUT','BUTTON','SELECT','TEXTAREA','META','LINK','SVG','MATH','VIDEO','AUDIO','SOURCE','CANVAS']);
+  const ALLOWED_TAGS = new Set(['A','P','BR','HR','STRONG','B','EM','I','U','S','DEL','INS','H1','H2','H3','H4','H5','H6','UL','OL','LI','BLOCKQUOTE','PRE','CODE','TABLE','THEAD','TBODY','TFOOT','TR','TH','TD','DIV','SPAN','IMG','SUP','SUB','SMALL','DL','DT','DD','MATH','MI','MN','MO','MFRAC','MSUP','MSUB','MSUBSUP','MSQRT','MROW','MTEXT','MSPACE','MOVER','MUNDER','MUNDEROVER','MPADDED','MPHANTOM','MTABLE','MTR','MTD','MSELECT','MS','MSCRIPT','MMULTISCRIPTS','MSGROUP','MSROW','MNOTATION','MERROR','MENCODED']);
+  const MATHML_TAGS = new Set(['MATH','MI','MN','MO','MFRAC','MSUP','MSUB','MSUBSUP','MSQRT','MROW','MTEXT','MSPACE','MOVER','MUNDER','MUNDEROVER','MPADDED','MPHANTOM','MTABLE','MTR','MTD','MSELECT','MS','MSCRIPT','MMULTISCRIPTS','MSGROUP','MSROW','MNOTATION','MERROR','MENCODED']);
+  const DROP_TAGS = new Set(['SCRIPT','STYLE','IFRAME','OBJECT','EMBED','FORM','INPUT','BUTTON','SELECT','TEXTAREA','META','LINK','SVG','VIDEO','AUDIO','SOURCE','CANVAS']);
 
   function kbEsc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1681,6 +1704,7 @@ kbInitSideResizers();
         [...el.attributes].forEach(attr => {
           const n = attr.name.toLowerCase(), v = attr.value.trim();
           if (/^on/i.test(n)) { el.removeAttribute(attr.name); return; }
+          if (MATHML_TAGS.has(tag)) { return; /* MathML 语义/排版属性一律保留 */ }
           const keepBasic = ['title','colspan','rowspan','scope','alt','width','height','loading'].includes(n);
           if (n === 'href' && tag === 'A') {
             const safe = /^(https?:|mailto:|#item-[a-zA-Z0-9_-]+$|#sec-[a-zA-Z0-9_-]+$|#attachment-[a-zA-Z0-9_-]+$)/i.test(v);
@@ -1699,9 +1723,11 @@ kbInitSideResizers();
             if (v !== '_blank' && v !== '_self') el.removeAttribute(attr.name);
           } else if ((n === 'data-kb-attachment' || n === 'data-kb-attachment-image') && /^[a-zA-Z0-9_-]{1,160}$/.test(v)) {
             /* controlled local attachment reference */
+          } else if (n === 'data-latex') {
+            if (v.length > 2000) el.removeAttribute(attr.name);
           } else if (n === 'class' && !/^([\w -]{1,100})$/.test(v)) {
             el.removeAttribute(attr.name);
-          } else if (!(keepBasic || n === 'href' && tag === 'A' || n === 'src' && tag === 'IMG' || n === 'target' && tag === 'A' || n === 'class' || n === 'data-kb-attachment' || n === 'data-kb-attachment-image')) {
+          } else if (!(keepBasic || n === 'href' && tag === 'A' || n === 'src' && tag === 'IMG' || n === 'target' && tag === 'A' || n === 'class' || n === 'data-latex' || n === 'data-kb-attachment' || n === 'data-kb-attachment-image')) {
             el.removeAttribute(attr.name);
           }
         });
@@ -1891,6 +1917,7 @@ kbInitSideResizers();
           ${(it.tags || []).length ? `<div class="kb-tags">${tags}</div>` : ''}`;
         sec.appendChild(card);
         if (window.kbHydrateAttachments) window.kbHydrateAttachments(card);
+        if (window.kbRenderFormulas) window.kbRenderFormulas(card);
         if (terms.length) kbHighlight(card, terms);
       });
     });
@@ -2522,27 +2549,21 @@ kbInitSideResizers();
   };
   window.kbEdFilesPicked=async function(input){
     const files=[...(input.files||[])]; if(!files.length) return;
-    const imgExts=['png','jpg','jpeg','gif','webp'];
-    const docExts=['docx','pdf','txt','md','csv','html','htm','xlsx','pptx'];
     let ok=[], failed=[];
     for(const f of files){
       const ext=extension(f.name);
       try{
-        if(imgExts.includes(ext)){
-          if(f.size>20*1024*1024){ failed.push(f.name+'（图片超过 20MB）'); continue; }
-          const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);r.readAsDataURL(f);});
-          kbEdInsertHTML('<p><img class="kb-ed-img" src="'+dataUrl+'" alt="'+kbEsc(f.name)+'" style="width:100%"></p>');
-          ok.push(f.name);
-        } else if(docExts.includes(ext)){
-          let text='';
-          try{ text=await extractText(f,ext); }catch(ex){ console.warn(ex); }
-          if(!String(text||'').trim()){ failed.push(f.name+'（未提取到文字）'); continue; }
-          kbEdInsertHTML(kbTextToHtml(text));
-          ok.push(f.name);
-        } else { failed.push(f.name+'（不支持的格式）'); }
-      }catch(ex){ failed.push(f.name+'（'+(ex.message||'读取失败')+'）'); }
+        if(f.size>100*1024*1024){ failed.push(f.name+'（超过 100 MB）'); continue; }
+        const id=idgen();
+        const meta={id,name:f.name,type:f.type||mimeByExt(ext),size:f.size,lastModified:f.lastModified||Date.now()};
+        await putAttachment(id,f,meta);
+        if(!Array.isArray(appData.attachmentsMeta))appData.attachmentsMeta=[];
+        appData.attachmentsMeta.push(meta);
+        kbEdInsertHTML('<p>📎 <a class="kb-att-link" href="#attachment-'+kbEsc(meta.id)+'" data-kb-attachment="'+kbEsc(meta.id)+'">'+kbEsc(meta.name)+'</a> <span style="color:var(--t3);font-size:12px;">（'+formatSize(meta.size)+'）</span></p>');
+        ok.push(f.name);
+      }catch(ex){ failed.push(f.name+'（'+(ex.message||'保存失败')+'）'); }
     }
-    if(ok.length) toastMsg('已插入 '+ok.length+' 个文件：'+ok.slice(0,3).join('、')+(ok.length>3?' 等':''));
+    if(ok.length) toastMsg('已插入附件链接：'+ok.slice(0,3).join('、')+(ok.length>3?' 等':''));
     if(failed.length) toastMsg('部分文件未插入：'+failed.slice(0,2).join('；'));
     input.value='';
   };
@@ -2565,27 +2586,24 @@ kbInitSideResizers();
   window.kbEdFontSize=function(v){ if(v) kbEdApplyStyle('font-size:'+v); };
   window.kbEdColor=function(v){ if(v) kbEdApplyStyle('color:'+v); };
   window.kbEdHilite=function(v){ if(v) kbEdApplyStyle('background-color:'+v); };
-  let kbColorPending = null;   // {kind, color, btn} 选色后待应用到后续选中的文字
+  let kbColorPending = null;   // {kind, color} 先在调色盘选色，再选中正文文字即生效
   const KB_COLOR_PRESETS = ['#d94848','#b8860b','#2f855a','#2563eb','#6b7280','#111827','#ffffff','#fff3a0','#fdecea'];
   function kbColorPopEl(){ return document.getElementById('kbColorPop'); }
-  function kbColorResetBtn(){ if(kbColorPending && kbColorPending.btn){ kbColorPending.btn.classList.remove('kb-ed-btn-active'); } }
   function kbCloseColorPop(){
     const el = kbColorPopEl(); if (el) { el.classList.remove('active'); el.innerHTML = ''; }
   }
-  function kbClearColorPending(){ kbColorResetBtn(); kbColorPending = null; }
+  function kbClearColorPending(){ kbColorPending = null; kbCloseColorPop(); }
+  window.kbClearColorPending = kbClearColorPending;
   window.kbEdOpenColor = function(kind, btn){
     const root = kbEdRoot(); if (!root) return;
-    kbColorResetBtn();
-    kbColorPending = { kind: kind, color: kind === 'hilite' ? '#fff3a0' : '#d94848', btn: btn || null };
-    if(btn) btn.classList.add('kb-ed-btn-active');
+    kbColorPending = { kind: kind, color: kind === 'hilite' ? '#fff3a0' : '#d94848' };
     const el = kbColorPopEl(); if (!el) return;
-    const title = kind === 'hilite' ? '突出显示（选色后在正文选中文字生效）' : '文字颜色（选色后在正文选中文字生效）';
-    const presets = KB_COLOR_PRESETS.map(function(c){ return '<button type="button" class="cp-swatch" data-c="'+c+'" style="background:'+c+'" title="'+c+'" onclick="kbEdPickColor(\''+c+'\')"></button>'; }).join('');
+    const title = kind === 'hilite' ? '突出显示（先选颜色，再在正文选中文字生效）' : '文字颜色（先选颜色，再在正文选中文字生效）';
+    const presets = KB_COLOR_PRESETS.map(function(c){ return '<button type="button" class="cp-swatch" style="background:'+c+'" title="'+c+'" onclick="kbEdPickColor(\''+kind+'\',\''+c+'\')"></button>'; }).join('');
     el.innerHTML =
       '<div class="cp-title">'+title+'</div>' +
       '<div class="cp-presets">'+presets+'</div>' +
-      '<div class="cp-row"><input type="color" id="kbColorNative" value="'+kbColorPending.color+'" oninput="kbEdPickColor(this.value)"><div class="cp-preview" id="kbColorPreview" style="background:'+kbColorPending.color+'"></div></div>' +
-      '<div class="cp-btns"><button type="button" class="btn" onclick="kbEdCancelColor()">取消</button><button type="button" class="btn btn-primary" onclick="kbEdDoneColor()">完成</button></div>';
+      '<div class="cp-row"><input type="color" id="kbColorNative" value="'+kbColorPending.color+'" oninput="kbEdPickColor(\''+kind+'\',this.value)"><div class="cp-preview" id="kbColorPreview" style="background:'+kbColorPending.color+'"></div></div>';
     el.classList.add('active');
     if (btn && btn.getBoundingClientRect) {
       const r = btn.getBoundingClientRect();
@@ -2595,31 +2613,111 @@ kbInitSideResizers();
       el.style.left = '50%'; el.style.top = '30%';
     }
   };
-  window.kbEdPickColor = function(c){
-    if(!kbColorPending) return;
-    kbColorPending.color = c;
-    const pv = document.getElementById('kbColorPreview'); if (pv) pv.style.background = c;
-    const n = document.getElementById('kbColorNative'); if (n && n.value.toLowerCase() !== String(c).toLowerCase()) n.value = c;
-  };
-  window.kbEdCancelColor = function(){ kbClearColorPending(); kbCloseColorPop(); };
-  window.kbEdDoneColor = function(){
+  window.kbEdPickColor = function(kind, c){
+    kbColorPending = { kind: kind, color: c };
     kbCloseColorPop();
-    if(kbColorPending) toastMsg('请在正文选中要'+(kbColorPending.kind==='hilite'?'高亮':'改色')+'的文字');
+    toastMsg('已选颜色，请在正文选中要'+(kind === 'hilite' ? '高亮' : '改色')+'的文字');
   };
   window.kbEdMaybeApplyPending = function(){
     if(!kbColorPending) return;
     const root = kbEdRoot(); if(!root) return;
+    root.focus();
     const sel = window.getSelection();
-    if(!sel.rangeCount || sel.getRangeAt(0).collapsed || !root.contains(sel.anchorNode)) return;
+    if(!sel.rangeCount || sel.getRangeAt(0).collapsed) return;
+    if(!root.contains(sel.anchorNode) && !root.contains(sel.focusNode)) return;
     const css = (kbColorPending.kind === 'hilite' ? 'background-color:' : 'color:') + kbColorPending.color;
     kbEdApplyStyle(css);
-    kbClearColorPending();
+    kbColorPending = null;
   };
-  window.kbClearColorPending = kbClearColorPending;
   document.addEventListener('mousedown', function(e){
     const el = kbColorPopEl();
-    if (el && el.classList.contains('active') && !el.contains(e.target)) kbCloseColorPop();
+    if (el && el.classList.contains('active') && !el.contains(e.target)){ kbClearColorPending(); }
   });
+
+  /* ===== 公式（LaTeX / MathML） ===== */
+  let katexLoading = null;
+  function kbEnsureKatex(){
+    if(window.katex) return Promise.resolve(true);
+    if(katexLoading) return katexLoading;
+    katexLoading = new Promise(function(res){
+      const s=document.createElement('script');
+      s.src='https://fastly.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js';
+      s.onload=()=>res(true); s.onerror=()=>res(false);
+      document.head.appendChild(s);
+    });
+    return katexLoading;
+  }
+  window.kbRenderFormulas = async function(root){
+    if(!root) return;
+    const els=[...root.querySelectorAll('.kb-math[data-latex]')];
+    if(!els.length) return;
+    const ok=await kbEnsureKatex();
+    els.forEach(function(el){
+      const tex=el.getAttribute('data-latex')||'';
+      if(ok && window.katex){
+        try{ window.katex.render(tex, el, {throwOnError:false, displayMode: el.classList.contains('kb-formula-block')}); }
+        catch(e){ el.textContent=tex; }
+      } else { el.textContent=tex; }
+    });
+  };
+  function kbFmPopEl(){ return document.getElementById('kbFormulaPop'); }
+  function kbStripTexDelim(tex){
+    return String(tex||'').trim()
+      .replace(/^\$\$/, '').replace(/\$\$$/, '')
+      .replace(/^\\\[/, '').replace(/\\\]$/, '')
+      .replace(/^\$/, '').replace(/\$$/, '').trim();
+  }
+  window.kbEdOpenFormula = function(){
+    const el=kbFmPopEl(); if(!el) return;
+    el.innerHTML =
+      '<div class="cp-title">插入公式（LaTeX / MathML）</div>' +
+      '<div class="f-group"><label>格式</label><select id="kbFmType" onchange="kbFmToggle()">' +
+        '<option value="latex">LaTeX</option><option value="mathml">MathML</option></select></div>' +
+      '<div class="f-group"><label id="kbFmLabel">LaTeX 源码（例如 E=mc^2、\\frac{a}{b}）</label>' +
+        '<textarea id="kbFmInput" placeholder="E=mc^2"></textarea></div>' +
+      '<div class="kb-formula-preview" id="kbFmPreview">预览</div>' +
+      '<div class="cp-btns"><button type="button" class="btn" onclick="kbFmCancel()">取消</button>' +
+      '<button type="button" class="btn btn-primary" onclick="kbFmInsert()">插入</button></div>';
+    el.classList.add('active');
+    const inp=document.getElementById('kbFmInput');
+    if(inp) inp.addEventListener('input', kbFmPreview);
+  };
+  window.kbFmToggle = function(){
+    const t=document.getElementById('kbFmType').value;
+    const lab=document.getElementById('kbFmLabel');
+    if(lab) lab.textContent = t==='mathml' ? 'MathML 标记（<math>…</math>，浏览器原生渲染）' : 'LaTeX 源码（例如 E=mc^2、\\frac{a}{b}）';
+    kbFmPreview();
+  };
+  window.kbFmPreview = async function(){
+    const t=document.getElementById('kbFmType').value;
+    const inp=document.getElementById('kbFmInput');
+    const pv=document.getElementById('kbFmPreview');
+    if(!inp||!pv) return;
+    const val=inp.value;
+    if(!val.trim()){ pv.textContent='预览'; return; }
+    if(t==='mathml'){ pv.innerHTML=val; return; }
+    const tex=kbStripTexDelim(val);
+    const ok=await kbEnsureKatex();
+    if(ok&&window.katex){ try{ window.katex.render(tex,pv,{throwOnError:false,displayMode:false}); return; }catch(e){} }
+    pv.textContent=tex;
+  };
+  window.kbFmCancel = function(){ const el=kbFmPopEl(); if(el){ el.classList.remove('active'); el.innerHTML=''; } };
+  window.kbFmInsert = function(){
+    const t=document.getElementById('kbFmType').value;
+    const inp=document.getElementById('kbFmInput');
+    const raw=inp?inp.value:'';
+    if(!raw.trim()){ toastMsg('请先输入公式内容'); return; }
+    if(t==='mathml'){
+      if(!/<math[\s>]/i.test(raw)){ toastMsg('MathML 需以 <math> 标签开头'); return; }
+      kbEdInsertHTML('<p>'+raw+'</p>');
+    } else {
+      const tex=kbStripTexDelim(raw);
+      const block=/\n/.test(tex) || /^(\$\$|\\\[)/.test(raw.trim());
+      const cls='kb-math'+(block?' kb-formula-block':'');
+      kbEdInsertHTML('<p><span class="'+cls+'" data-latex="'+kbEsc(tex)+'">'+kbEsc(tex)+'</span></p>');
+    }
+    kbFmCancel();
+  };
   window.kbEdAlign=function(cmd){ kbEdFocus(); document.execCommand('styleWithCSS',false,true); document.execCommand(cmd,false,null); };
   window.kbEdLineHeight=function(v){
     const root=kbEdRoot(); if(!root||!v) return; root.focus();
@@ -2699,6 +2797,7 @@ kbInitSideResizers();
           <button type="button" class="btn btn-sm" onclick="kbEdInsertImageClick()">插入图片</button>
           <button type="button" class="btn btn-sm" onclick="kbEdImportDocClick()">导入文档</button>
           <button type="button" class="btn btn-sm" onclick="document.getElementById('fItFiles').click()">导入文件</button>
+          <button type="button" class="btn btn-sm" onclick="kbEdOpenFormula()" title="插入 LaTeX / MathML 公式">ƒ(x) 公式</button>
           <span class="kb-ed-img-ops" id="kbEdImgOps" style="display:none;">
             <button type="button" class="btn btn-sm" onclick="kbEdSetImgWidth('30%')">小</button>
             <button type="button" class="btn btn-sm" onclick="kbEdSetImgWidth('50%')">中</button>
@@ -2707,10 +2806,10 @@ kbInitSideResizers();
           </span>
         </div>
         <div id="fItContent" class="kb-rich-editor" contenteditable="true">${it.content||''}</div>
-        <div class="kb-filter-hint">可直接粘贴文字或截图；点击插入的图片后，用上方「小 / 中 / 大 / 全屏」调整比例。支持导入 docx、pdf、txt、md、xlsx、pptx 解析为文字。</div>
+        <div class="kb-filter-hint">可直接粘贴文字或截图；「插入图片」内联显示图片，「导入文档」解析为文字，「导入文件」以附件链接形式插入正文，「ƒ(x) 公式」可插入 LaTeX / MathML 公式。</div>
         <input type="file" id="fItImgFile" accept=".png,.jpg,.jpeg,.gif,.webp" style="display:none" onchange="kbEdImgPicked(this)">
         <input type="file" id="fItDocFile" accept=".docx,.pdf,.txt,.md,.csv,.html,.htm,.xlsx,.pptx" style="display:none" onchange="kbEdDocPicked(this)">
-        <input type="file" id="fItFiles" multiple accept=".pdf,.docx,.doc,.png,.jpg,.jpeg,.gif,.webp,.xlsx,.xls,.pptx,.txt,.md,.csv,.html,.htm" style="display:none" onchange="kbEdFilesPicked(this)">
+        <input type="file" id="fItFiles" multiple style="display:none" onchange="kbEdFilesPicked(this)">
       </div>
       <div class="f-row"><div class="f-group"><label>标签（逗号分隔）</label><input type="text" id="fItTags" value="${esc((it.tags||[]).join(', '))}" placeholder="安全, 流程"></div>
       <div class="f-group"><label>重要程度</label><select id="fItLevel">${window.kbLevelList().map(x=>`<option value="${kbEsc(x.key)}" ${it.level===x.key?'selected':''}>${kbEsc(window.kbLevelConfig(x.key).name)}</option>`).join('')}</select></div></div>
@@ -2721,6 +2820,13 @@ kbInitSideResizers();
     const edRoot = document.getElementById('fItContent');
     if (edRoot) {
       edRoot.addEventListener('mouseup', () => { setTimeout(() => { if(window.kbEdMaybeApplyPending) window.kbEdMaybeApplyPending(); }, 0); });
+      edRoot.addEventListener('keydown', ev => {
+        /* 仅 Enter 产生段落换行；Shift/Ctrl/Alt+Enter 不插入软换行 <br>，统一按段落处理 */
+        if(ev.key === 'Enter' && (ev.shiftKey || ev.ctrlKey || ev.altKey)){
+          ev.preventDefault();
+          document.execCommand('insertParagraph', false, null);
+        }
+      });
       edRoot.addEventListener('click', ev => {
         const img = ev.target.closest('img');
         if (kbEdSelectedImg) kbEdSelectedImg.classList.remove('kb-ed-sel');
@@ -2738,6 +2844,16 @@ kbInitSideResizers();
           const reader = new FileReader();
           reader.onload = e => kbEdInsertHTML('<p><img class="kb-ed-img" src="' + e.target.result + '" style="width:100%"></p>');
           reader.readAsDataURL(f);
+          return;
+        }
+        const hasHtml = items.some(it => it.type === 'text/html');
+        if(!hasHtml){
+          const plain = ev.clipboardData && ev.clipboardData.getData('text/plain');
+          if(plain){
+            ev.preventDefault();
+            const lines = String(plain).split(/\r?\n/).filter(s => s.trim());
+            if(lines.length) kbEdInsertHTML(lines.map(l => '<p>'+kbEsc(l)+'</p>').join(''));
+          }
         }
       });
     }
@@ -2749,6 +2865,8 @@ kbInitSideResizers();
     let rawContent=edEl?edEl.innerHTML:'';
     rawContent=rawContent.replace(/^(<br\s*\/?>)+/,'').replace(/(<br\s*\/?>)+$/,'').replace(/^<p><br\s*\/?><\/p>$/,'').trim();
     const content=autoLinkHTML(rawContent);
+    const attIds=[...new Set([...rawContent.matchAll(/data-kb-attachment="([a-zA-Z0-9_-]+)"/g)].map(m=>m[1]))];
+    const attachments=attIds.map(aid=>{const m=(appData.attachmentsMeta||[]).find(x=>x.id===aid);return m?{id:m.id,name:m.name,type:m.type,size:m.size}:{id:aid,name:aid,type:'',size:0};});
     const tags=[...new Set(document.getElementById('fItTags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean))];
     const level=window.kbNormalizeLevel?window.kbNormalizeLevel(document.getElementById('fItLevel').value):document.getElementById('fItLevel').value;
     const dateInput=document.getElementById('fItUpdated').value; const updatedAt=dateInput?new Date(dateInput).toISOString():new Date().toISOString(); const now=new Date().toISOString();
@@ -2760,8 +2878,8 @@ kbInitSideResizers();
       if(!parent){depth=1;parentId=null;}
       else { const pd=[1,2,3].includes(Number(parent.depth))?Number(parent.depth):1; if(pd!==depth-1){ if(depth===2){depth=1;parentId=null;} else { parentId=String(parent.id); depth=Math.min(pd+1,3); } } }
     }
-    if(String(iid)==='-1')ch.items.push({id:genId(),title,content,tags,level,depth,parentId,createdAt:now,updatedAt});
-    else { const it=ch.items.find(i=>String(i.id)===String(iid)); if(it){it.title=title;it.content=content;it.tags=tags;it.level=level;it.depth=depth;it.parentId=parentId;it.updatedAt=updatedAt;} }
+    if(String(iid)==='-1')ch.items.push({id:genId(),title,content,tags,level,depth,parentId,attachments,createdAt:now,updatedAt});
+    else { const it=ch.items.find(i=>String(i.id)===String(iid)); if(it){it.title=title;it.content=content;it.tags=tags;it.level=level;it.depth=depth;it.parentId=parentId;it.attachments=attachments;it.updatedAt=updatedAt;} }
     try{appData.updatedAt=new Date().toISOString();save();}catch(e){toastMsg('保存失败：浏览器本地存储空间可能不足，请先导出数据');}
     closeModal(); renderAdminItems(); renderAdminChs(); renderNav(); renderDoc(); toastMsg('条目已保存');
   };
