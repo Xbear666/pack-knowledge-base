@@ -26,6 +26,7 @@
   --shadow: 0 1px 2px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.06);
   --nav-h: 60px;
   --side-w: 280px;
+  --admin-side-w: 230px;
   --radius: 12px;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -236,7 +237,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .btn-danger:hover { background: var(--red-soft); }
 .btn-sm { padding: 4px 10px; font-size: 12px; }
 
-.admin-grid { display: grid; grid-template-columns: 230px 1fr; gap: 20px; }
+.admin-grid { display: grid; grid-template-columns: var(--admin-side-w) 1fr; gap: 20px; }
 .admin-side {
   background: var(--bg-alt); border: 1px solid var(--divider); border-radius: var(--radius); padding: 10px;
 }
@@ -312,6 +313,35 @@ html.dark .admin-tool-btn:hover { background: rgba(255,255,255,.055); }
 }
 .toast.show { opacity: 1; }
 
+/* ===== 侧边栏拖拽调宽 ===== */
+.side-resizer {
+  position: absolute; top: 0; right: -3px; width: 7px; height: 100%;
+  cursor: col-resize; z-index: 27; background: transparent; border-radius: 0 4px 4px 0;
+}
+.side-resizer:hover, .side-resizer.dragging { background: var(--brand-soft); }
+.admin-side { position: relative; }
+.admin-side-resizer {
+  position: absolute; top: 0; right: -4px; width: 8px; height: 100%;
+  cursor: col-resize; z-index: 5; background: transparent; border-radius: 0 4px 4px 0;
+}
+.admin-side-resizer:hover, .admin-side-resizer.dragging { background: var(--brand-soft); }
+body.kb-resizing, body.kb-resizing * { cursor: col-resize !important; user-select: none !important; }
+
+/* ===== 编辑器颜色 / 高亮弹层 ===== */
+.kb-color-pop {
+  position: fixed; z-index: 160; background: var(--bg); border: 1px solid var(--divider);
+  border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.18); padding: 14px; width: 250px; display: none;
+}
+.kb-color-pop.active { display: block; }
+.kb-color-pop .cp-title { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+.kb-color-pop .cp-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.kb-color-pop .cp-swatch { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--divider); cursor: pointer; padding: 0; }
+.kb-color-pop .cp-swatch:hover { outline: 2px solid var(--brand); }
+.kb-color-pop .cp-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.kb-color-pop .cp-row input[type=color] { width: 42px; height: 30px; padding: 0; border: 1px solid var(--divider); border-radius: 6px; background: none; }
+.kb-color-pop .cp-row .cp-preview { width: 34px; height: 30px; border: 1px solid var(--divider); border-radius: 6px; }
+.kb-color-pop .cp-btns { display: flex; justify-content: flex-end; gap: 8px; }
+
 /* 移动端 */
 @media (max-width: 768px) {
   .nav .menu-btn { display: grid; }
@@ -320,6 +350,7 @@ html.dark .admin-tool-btn:hover { background: rgba(255,255,255,.055); }
   .overlay.show { display: block; }
   .content { margin-left: 0; padding: calc(var(--nav-h) + 20px) 16px 80px; }
   .admin-grid { grid-template-columns: 1fr; }
+  .side-resizer, .admin-side-resizer { display: none; }
   .nav .brand span { display: none; }
   .nav .brand .logo-img { width:92px; height:25px; }
 }
@@ -510,6 +541,7 @@ html.dark .kb-hit { background:rgba(234,179,8,.30); color:inherit; }
         <a class="mini-btn primary" href="https://www.doubao.com" target="_blank">打开豆包</a>
       </div>
     </div>
+    <div class="side-resizer" id="sideResizer"></div>
   </aside>
 
   <main class="content">
@@ -567,14 +599,15 @@ html.dark .kb-hit { background:rgba(234,179,8,.30); color:inherit; }
         <div class="admin-tool-list">
           <button class="admin-tool-btn" type="button" onclick="exportData()">导出数据</button>
           <button class="admin-tool-btn" type="button" onclick="document.getElementById('importFile').click()">导入数据 JSON</button>
-          <button class="admin-tool-btn" type="button" onclick="document.getElementById('importFiles').click()">导入文件</button>
           <button class="admin-tool-btn" type="button" onclick="kbExportOfflineHTML()">导出离线网页</button>
           <button class="admin-tool-btn" type="button" onclick="kbExportPDF()">导出 PDF</button>
           <button class="admin-tool-btn" type="button" onclick="kbExportEPUB()">导出 EPUB</button>
           <button class="admin-tool-btn" type="button" onclick="showWpsSettings()">WPS 在线编辑</button>
+          <button class="admin-tool-btn" type="button" onclick="showLevelEditor()">标签编辑</button>
           <button class="admin-tool-btn" type="button" onclick="showSettings()">设置</button>
           <button class="admin-tool-btn" type="button" onclick="openChangelog()">网页更新日志</button>
         </div>
+        <div class="admin-side-resizer" id="adminSideResizer"></div>
         <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importData(event)">
         <input type="file" id="importFiles" multiple="" accept=".pdf,.docx,.doc,.png,.jpg,.jpeg,.xlsx,.xls,.pptx,.txt,.md,.csv,.html,.htm" style="display:none" onchange="kbImportFiles(event)">
       </div>
@@ -609,6 +642,7 @@ html.dark .kb-hit { background:rgba(234,179,8,.30); color:inherit; }
       <div class="modal-btns"><button class="btn" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveSettings()">保存</button></div></div>
 </div>
 
+<div id="kbColorPop" class="kb-color-pop"></div>
 <div class="toast" id="toast"></div>
 
 <script>window.__KB_EMBEDDED_DATA__={"bookTitle":"Pack设计规范-V1.5","bookDesc":"在这里查看储能Pack设计规范、操作规范和常见问题解答。","adminPassHash":"35f08677bf5d6aae3c6065901be987911458ed47215d779347a0cf6ac92a820c","chapters":[{"id":"ch1","title":"入职指南","items":[{"id":"i11","title":"公司组织架构","level":"normal","tags":["入门","组织"],"content":"\u003cp>公司设有研发中心、生产制造中心、质量管理部、供应链部、市场营销部和职能支持部门。\u003c/p>\u003cp>新员工入职后由部门主管介绍本部门架构和主要职责。\u003c/p>   https://sspai.com/?utm_source=wetab.link","updatedAt":"2026-11-10T03:21:33.568Z"},{"id":"i12","title":"办公系统使用","level":"important","tags":["工具","系统"],"content":"\u003cp>日常办公主要使用以下系统：\u003c/p>\u003cul>\u003cli>飞书：内部沟通、审批流程、文档协作\u003c/li>\u003cli>OA系统：请假、报销、考勤查询\u003c/li>\u003cli>知识库：技术文档、SOP、培训资料\u003c/li>\u003c/ul>"}]},{"id":"ch2","title":"产品与技术基础","items":[{"id":"i21","title":"储能PACK系统概述","level":"important","tags":["产品","储能"],"content":"\u003cp>储能PACK是储能系统的核心单元，由电芯、BMS、热管理系统、结构件和电气连接系统组成。\u003c/p>\u003cp>我们主要生产588Ah和648Ah电芯对应的标准PACK产品，应用于工商业储能和大储场景。\u003c/p>\u003cp>参考：\u003ca href=\"https://www.zhihu.com/topic/19813432\" target=\"_blank\">储能系统入门\u003c/a>\u003c/p>"},{"id":"i22","title":"高压安全注意事项","level":"warning","tags":["安全","高压"],"content":"\u003cp>储能系统涉及高压直流电，操作时必须遵守以下安全规范：\u003c/p>\u003col>\u003cli>操作前必须断电并验电\u003c/li>\u003cli>佩戴绝缘手套和护目镜\u003c/li>\u003cli>高压区域两人以上方可作业\u003c/li>\u003c/ol>"}]},{"id":"ch3","title":"常用操作流程","items":[{"id":"i31","title":"物料请购流程","level":"normal","tags":["流程","采购"],"content":"\u003cp>1. 在OA系统提交请购申请，注明物料编码、数量、需求日期\u003c/p>\u003cp>2. 部门主管审批\u003c/p>\u003cp>3. 采购部询价比价\u003c/p>\u003cp>4. 下单跟进到货\u003c/p>"}]}],"attachmentsMeta":[]};window.__KB_EMBEDDED_ATTACHMENTS__={};</script>
@@ -869,36 +903,86 @@ function markDirty() {
   const btn = document.getElementById('btnSaveChanges');
   if (btn) { btn.style.opacity = '1'; btn.textContent = '● 保存修改'; }
 }
-function saveChanges() {
+let kbBaseCloudTs = 0;
+let kbConflictCloud = null;
+async function saveChanges() {
   appData.updatedAt = new Date().toISOString();
   save();
   hasUnsavedChanges = false;
   const btn = document.getElementById('btnSaveChanges');
-  if (btn) { btn.style.opacity = '0.6'; btn.textContent = '已保存'; }
-  // 同步到云端
-  if (cloudReady) {
-    btn.textContent = '同步中...';
-    pushToCloud(appData).then(function(res){
-      if (res.ok) {
-        try { localStorage.setItem('h5_kb_last_synced', new Date().toISOString()); } catch(e){}
-        var t = new Date();
-        var hm = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
-        btn.textContent = '已保存并同步 ' + hm;
-        setTimeout(() => btn.textContent = '已保存', 2000);
-      } else {
-        btn.textContent = '本地已存，云端失败';
-        var msg;
-        if (res.reason === 'network') msg = '云端连接失败：当前网络无法访问 Supabase（请检查网络或代理）';
-        else if (res.status === 401 || res.status === 403) msg = '云端鉴权失败：Key 或读写权限不对';
-        else if (res.status === 404) msg = (res.body && /PGRST125|Invalid path/i.test(res.body)) ? '云端地址路径无效：Project URL 带了多余路径，请检查云同步地址' : '云端数据表不存在';
-        else msg = '云端保存失败（HTTP ' + res.status + '）';
-        toast(msg);
-      }
-    });
-  } else {
+  if (!cloudReady) {
+    if (btn) { btn.style.opacity = '0.6'; btn.textContent = '已保存'; }
     toast('修改已保存（本地）');
+    return;
+  }
+  let cloudData = null;
+  try { cloudData = await pullFromCloud(); } catch(e) { cloudData = null; }
+  const cloudT = (cloudData && Array.isArray(cloudData.chapters)) ? _kbTs(cloudData.updatedAt) : 0;
+  if (cloudT && kbBaseCloudTs && cloudT > kbBaseCloudTs) {
+    kbShowConflictDialog(cloudData);
+    return;
+  }
+  if (btn) btn.textContent = '同步中...';
+  const res = await pushToCloud(appData);
+  if (res.ok) {
+    kbBaseCloudTs = _kbTs(appData.updatedAt);
+    try { localStorage.setItem('h5_kb_last_synced', new Date().toISOString()); } catch(e){}
+    var t = new Date();
+    var hm = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
+    if (btn) { btn.textContent = '已保存并同步 ' + hm; setTimeout(() => btn.textContent = '已保存', 2000); }
+  } else {
+    if (btn) btn.textContent = '本地已存，云端失败';
+    var msg;
+    if (res.reason === 'network') msg = '云端连接失败：当前网络无法访问 Supabase（请检查网络或代理）';
+    else if (res.status === 401 || res.status === 403) msg = '云端鉴权失败：Key 或读写权限不对';
+    else if (res.status === 404) msg = (res.body && /PGRST125|Invalid path/i.test(res.body)) ? '云端地址路径无效：Project URL 带了多余路径，请检查云同步地址' : '云端数据表不存在';
+    else msg = '云端保存失败（HTTP ' + res.status + '）';
+    toast(msg);
   }
 }
+function kbShowConflictDialog(cloudData) {
+  kbConflictCloud = cloudData;
+  document.getElementById('modalBox').innerHTML =
+    '<h3>检测到多人同时编辑</h3>' +
+    '<div class="f-group"><p style="font-size:13.5px;color:var(--t2);line-height:1.7;margin:0;">云端版本比本机打开时更新，可能有其他人刚保存过。当前为整条记录同步，无法自动合并字段。请选择处理方式：</p></div>' +
+    '<div class="modal-btns" style="flex-direction:column;align-items:stretch;gap:8px;">' +
+    '<button class="btn btn-primary" onclick="kbConflictOverwrite()">仍覆盖云端（用本机内容替换）</button>' +
+    '<button class="btn" onclick="kbConflictPullCloud()">放弃本机改动，拉取云端版本</button>' +
+    '<button class="btn" onclick="kbConflictCancel()">取消（暂不上云，保留本机本地）</button></div>';
+  document.getElementById('modalMask').classList.add('active');
+}
+async function kbConflictOverwrite() {
+  closeModal();
+  const btn = document.getElementById('btnSaveChanges');
+  if (btn) btn.textContent = '同步中...';
+  const res = await pushToCloud(appData);
+  if (res.ok) {
+    kbBaseCloudTs = _kbTs(appData.updatedAt);
+    try { localStorage.setItem('h5_kb_last_synced', new Date().toISOString()); } catch(e){}
+    if (btn) { btn.style.opacity = '0.6'; btn.textContent = '已保存'; }
+    toast('已覆盖云端');
+  } else {
+    if (btn) btn.textContent = '本地已存，云端失败';
+    toast('云端保存失败，请稍后重试');
+  }
+}
+function kbConflictPullCloud() {
+  appData = kbConflictCloud;
+  if (typeof kbMigrateData === 'function') kbMigrateData();
+  try { save(); } catch(e) {}
+  kbBaseCloudTs = _kbTs(appData.updatedAt);
+  closeModal();
+  if (typeof renderAdminChs === 'function') renderAdminChs();
+  if (typeof renderAdminItems === 'function') renderAdminItems();
+  renderNav(); renderDoc();
+  toast('已拉取云端最新版本');
+}
+function kbConflictCancel() {
+  closeModal();
+  markDirty();
+  toast('已取消上云，本机改动仅保存在本地');
+}
+
 function genId() { return 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function toast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 1800); }
@@ -1262,43 +1346,24 @@ function delItem(iid) {
 }
 
 // 设置
-function showSettings() {
-  document.getElementById('modalBox').innerHTML = `
-    <h3>全局设置</h3>
-    <div class="f-group">
-      <label>知识库名称</label>
-      <input type="text" id="sTitle" value="${esc(appData.bookTitle)}">
-    </div>
-    <div class="f-group">
-      <label>简介</label>
-      <textarea id="sDesc" rows="3">${esc(appData.bookDesc)}</textarea>
-    </div>
-    <div class="f-group">
-      <label>修改管理密码</label>
-      <input type="password" id="sPass" autocomplete="new-password" placeholder="留空则不修改">
-    </div>
-    <div style="border-top:1px solid var(--divider);margin:16px 0;padding-top:16px;">
-      <div style="font-size:14px;font-weight:600;margin-bottom:10px;">☁️ 云同步（多设备共享）</div>
-      <p style="font-size:12px;color:var(--t3);margin-bottom:12px;">在 Supabase 创建项目后，把 Project URL 和 Publishable Key 填进来，所有设备打开都读同一份数据。不填则仅保存在本地浏览器。</p>
-      <div class="f-group">
-        <label>Supabase Project URL</label>
-        <input type="text" id="sCloudUrl" value="${esc(cloudConfig.url)}" placeholder="https://xxxx.supabase.co">
-      </div>
-      <div class="f-group">
-        <label>Supabase Publishable Key</label>
-        <input type="text" id="sCloudAnonKey" value="${esc(cloudConfig.anonKey)}" placeholder="sb_publishable_...">
-      </div>
-      <div style="font-size:12px;color:var(--t3);">
-        当前状态：<span id="cloudStatus">${cloudReady ? '✅ 已连接' : '未配置（仅本地）'}</span>
-        <br>注意：需要在 Supabase 控制台先建一张表 <code>knowledge_base</code>，字段 <code>id(int)</code> 和 <code>data(jsonb)</code>
-      </div>
-    </div>
-    <div class="modal-btns">
-      <button class="btn" onclick="closeModal()">取消</button>
-      <button class="btn btn-primary" onclick="saveSettings()">保存</button>
-    </div>
-  `;
+var kbRenderSettingsPanel, showLevelEditor, saveLevels;
+function showSettings() { kbOpenSettingsGate(); }
+function kbOpenSettingsGate() {
+  document.getElementById('modalBox').innerHTML =
+    '<h3>设置安全验证</h3>' +
+    '<div class="f-group"><label>请输入设置密码（二级密码）</label><input type="password" id="sGatePass" autocomplete="current-password" placeholder="请输入密码" onkeydown="if(event.key===\'Enter\')kbVerifySettingsPass()"></div>' +
+    '<div class="kb-filter-hint">密码以加盐哈希保存在本地/云端，页面不保存明文。</div>' +
+    '<div class="modal-btns"><button class="btn" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="kbVerifySettingsPass()">验证并打开</button></div>';
   document.getElementById('modalMask').classList.add('active');
+  setTimeout(function(){ var i=document.getElementById('sGatePass'); if(i) i.focus(); },50);
+}
+async function kbVerifySettingsPass() {
+  var inputEl = document.getElementById('sGatePass');
+  var input = inputEl ? inputEl.value : '';
+  var ok = await kbPwdEqual(input, appData.settingsPassHash);
+  if (!ok) { toast('密码不正确'); return; }
+  closeModal();
+  if (typeof window.kbRenderSettingsPanel === 'function') window.kbRenderSettingsPanel();
 }
 function kbAddLevelRow(){
   const box = document.getElementById('lvRows'); if(!box) return;
@@ -1311,18 +1376,6 @@ function kbRemoveLevelRow(btn){ const row = btn.closest('.lv-row'); if(row) row.
 async function saveSettings() {
   appData.bookTitle = document.getElementById('sTitle').value.trim() || '内部知识库';
   appData.bookDesc = document.getElementById('sDesc').value;
-  const lvRows = [...document.querySelectorAll('#lvRows .lv-row')];
-  const newLevels = [];
-  lvRows.forEach(row => {
-    const key = row.dataset.lvKey || ('lv_' + Math.random().toString(36).slice(2, 6));
-    const nameEl = row.querySelector('.lv-name'), colorEl = row.querySelector('.lv-color');
-    const name = (nameEl && nameEl.value.trim()) || '未命名';
-    const col = (colorEl && colorEl.value) || '#6b7280';
-    const colOk = /^#[0-9a-fA-F]{3,8}$/.test(String(col));
-    newLevels.push({ key, name: name.slice(0, 12), color: colOk ? col : '#6b7280', soft: '#f1f2f4' });
-  });
-  if (!newLevels.some(x => x.key === 'normal')) newLevels.push({ key: 'normal', name: '普通', color: '#6b7280', soft: '#f1f2f4' });
-  appData.levels = newLevels;
   const p = document.getElementById('sPass').value;
   if (p) {
     if (p.length < 6) { toast('密码至少 6 位'); return; }
@@ -1422,12 +1475,49 @@ function insertAttachmentIntoEditor(input) {
   reader.readAsDataURL(file);
 }
 function closeModal() { document.getElementById('modalMask').classList.remove('active'); document.getElementById('modalBox').classList.remove('modal-wide'); }
+function kbInitSideResizers() {
+  var root = document.documentElement;
+  try {
+    var sw = localStorage.getItem('h5_kb_side_w'); if (sw) root.style.setProperty('--side-w', sw + 'px');
+    var aw = localStorage.getItem('h5_kb_admin_side_w'); if (aw) root.style.setProperty('--admin-side-w', aw + 'px');
+  } catch(e) {}
+  function bind(resizerId, varName, storeKey, minW, maxW) {
+    var resizer = document.getElementById(resizerId); if (!resizer) return;
+    resizer.addEventListener('mousedown', function(e) {
+      if (window.innerWidth <= 768) return;
+      e.preventDefault();
+      var startX = e.clientX;
+      var cur = parseFloat(getComputedStyle(root).getPropertyValue(varName)) || 280;
+      var startW = cur;
+      document.body.classList.add('kb-resizing');
+      function onMove(ev) {
+        var w = startW + (ev.clientX - startX);
+        w = Math.max(minW, Math.min(maxW, w));
+        root.style.setProperty(varName, w + 'px');
+      }
+      function onUp() {
+        document.body.classList.remove('kb-resizing');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        try {
+          var finalW = Math.round(parseFloat(getComputedStyle(root).getPropertyValue(varName)));
+          localStorage.setItem(storeKey, String(finalW));
+        } catch(e) {}
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+  bind('sideResizer', '--side-w', 'h5_kb_side_w', 200, 480);
+  bind('adminSideResizer', '--admin-side-w', 'h5_kb_admin_side_w', 180, 420);
+}
 document.getElementById('modalMask').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
 
 // 初始化
 load();
 renderNav();
 renderDoc();
+kbInitSideResizers();
 </script>
 <script>
 /* ===== 知识库增强功能：保持原始离线数据及后台 CRUD，扩展读者端交互 ===== */
@@ -1515,6 +1605,7 @@ renderDoc();
     if (typeof appData.bookDesc !== 'string') appData.bookDesc = '在这里查看公司内部培训资料、操作规范和常见问题解答。';
     if (appData.adminPass) { delete appData.adminPass; }
     if (!appData.adminPassHash) appData.adminPassHash = '35f08677bf5d6aae3c6065901be987911458ed47215d779347a0cf6ac92a820c';
+    if (!appData.settingsPassHash) appData.settingsPassHash = 'e1b45881b03c2c4d8a0614f6e7f8a77d4af10ffb4940b2e1eaab47380216a1b7';
     if (typeof appData.changelog !== 'string') appData.changelog = '';
     if (!Array.isArray(appData.levels)) {
       const oldCfg = (appData.levelConfig && typeof appData.levelConfig === 'object') ? appData.levelConfig : {};
@@ -2065,22 +2156,13 @@ renderDoc();
     kbSave(); closeModal(); renderAdminChs(); renderAdminItems(); renderNav(); renderDoc(); toast('章节已保存');
   };
   /* 密码在设置中不回显明文，留空则保持当前密码。 */
-  showSettings = function () {
+  kbRenderSettingsPanel = function () {
     document.getElementById('modalBox').innerHTML = `
       <h3>全局设置</h3>
       <div class="f-group"><label>知识库名称</label><input type="text" id="sTitle" value="${kbEsc(appData.bookTitle)}"></div>
       <div class="f-group"><label>简介</label><textarea id="sDesc" rows="3">${kbEsc(appData.bookDesc)}</textarea></div>
       <div class="f-group"><label>修改管理密码</label><input type="password" id="sPass" autocomplete="new-password" placeholder="留空则不修改"></div>
       <div class="kb-filter-hint">密码以加盐哈希保存在本地/云端，页面不保存明文；离线 HTML 的校验仅用于防止误操作，不等同于服务器端安全认证。</div>
-      <div style="border-top:1px solid var(--divider);margin:16px 0;padding-top:16px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-          <div style="font-size:14px;font-weight:600;">重要程度自定义（可增删档位）</div>
-          <button type="button" class="btn btn-sm" onclick="kbAddLevelRow()">+ 新增档位</button>
-        </div>
-        <div id="lvRows">
-          ${kbLevelList().map(x => { const c = kbLevelConfig(x.key); const del = x.key === 'normal' ? '<span style="opacity:.4;font-size:12px;align-self:center;">默认档不可删</span>' : `<button type="button" class="btn btn-sm btn-danger" onclick="kbRemoveLevelRow(this)">删除</button>`; return `<div class="f-row lv-row" data-lv-key="${kbEsc(x.key)}" style="margin-bottom:10px;"><div class="f-group"><label>名称</label><input type="text" class="lv-name" value="${kbEsc(c.name)}"></div><div class="f-group"><label>颜色</label><input type="color" class="lv-color" value="${c.color}"></div><div class="f-group" style="justify-content:flex-end;">${del}</div></div>`; }).join('')}
-        </div>
-      </div>
       <div style="border-top:1px solid var(--divider);margin:16px 0;padding-top:16px;">
         <div style="font-size:14px;font-weight:600;margin-bottom:10px;">☁️ 云同步（多设备共享）</div>
         <p style="font-size:12px;color:var(--t3);margin-bottom:12px;">在 Supabase 创建项目后，把 Project URL 和 Publishable Key 填进来，所有设备打开都读同一份数据。不填则仅保存在本地浏览器。</p>
@@ -2090,6 +2172,36 @@ renderDoc();
       </div>
       <div class="modal-btns"><button class="btn" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveSettings()">保存</button></div>`;
     document.getElementById('modalMask').classList.add('active');
+  };
+  /* 标签编辑：档位名称/颜色独立弹窗，从设置中拆出。 */
+  showLevelEditor = function () {
+    document.getElementById('modalBox').innerHTML = `
+      <h3>标签编辑（重要程度档位）</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-size:14px;font-weight:600;">档位名称与颜色（可增删）</div>
+        <button type="button" class="btn btn-sm" onclick="kbAddLevelRow()">+ 新增档位</button>
+      </div>
+      <div id="lvRows">
+        ${kbLevelList().map(x => { const c = kbLevelConfig(x.key); const del = x.key === 'normal' ? '<span style="opacity:.4;font-size:12px;align-self:center;">默认档不可删</span>' : `<button type="button" class="btn btn-sm btn-danger" onclick="kbRemoveLevelRow(this)">删除</button>`; return `<div class="f-row lv-row" data-lv-key="${kbEsc(x.key)}" style="margin-bottom:10px;"><div class="f-group"><label>名称</label><input type="text" class="lv-name" value="${kbEsc(c.name)}"></div><div class="f-group"><label>颜色</label><input type="color" class="lv-color" value="${c.color}"></div><div class="f-group" style="justify-content:flex-end;">${del}</div></div>`; }).join('')}
+      </div>
+      <div class="modal-btns"><button class="btn" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveLevels()">保存标签</button></div>`;
+    document.getElementById('modalMask').classList.add('active');
+  };
+  saveLevels = async function () {
+    const lvRows = [...document.querySelectorAll('#lvRows .lv-row')];
+    const newLevels = [];
+    lvRows.forEach(row => {
+      const key = row.dataset.lvKey || ('lv_' + Math.random().toString(36).slice(2, 6));
+      const nameEl = row.querySelector('.lv-name'), colorEl = row.querySelector('.lv-color');
+      const name = (nameEl && nameEl.value.trim()) || '未命名';
+      const col = (colorEl && colorEl.value) || '#6b7280';
+      const colOk = /^#[0-9a-fA-F]{3,8}$/.test(String(col));
+      newLevels.push({ key, name: name.slice(0, 12), color: colOk ? col : '#6b7280', soft: '#f1f2f4' });
+    });
+    if (!newLevels.some(x => x.key === 'normal')) newLevels.push({ key: 'normal', name: '普通', color: '#6b7280', soft: '#f1f2f4' });
+    appData.levels = newLevels;
+    markDirty(); closeModal(); renderAdminChs(); renderAdminItems(); renderNav(); renderDoc();
+    toast('标签档位已保存，记得点「保存修改」同步云端');
   };
   /* 删除内容后同步筛选项与收藏集合。 */
   delItem = function (iid) {
@@ -2422,6 +2534,60 @@ renderDoc();
   window.kbEdFontSize=function(v){ if(v) kbEdApplyStyle('font-size:'+v); };
   window.kbEdColor=function(v){ if(v) kbEdApplyStyle('color:'+v); };
   window.kbEdHilite=function(v){ if(v) kbEdApplyStyle('background-color:'+v); };
+  let kbColorTarget = 'color';
+  let kbColorSavedRange = null;
+  let kbColorPending = null;
+  const KB_COLOR_PRESETS = ['#d94848','#b8860b','#2f855a','#2563eb','#6b7280','#111827','#ffffff','#fff3a0','#fdecea'];
+  function kbColorPopEl(){ return document.getElementById('kbColorPop'); }
+  function kbCloseColorPop(){
+    const el = kbColorPopEl(); if (el) { el.classList.remove('active'); el.innerHTML = ''; }
+    kbColorSavedRange = null; kbColorPending = null;
+  }
+  window.kbEdOpenColor = function(kind, btn){
+    const root = kbEdRoot(); if (!root) return;
+    const sel = window.getSelection();
+    if (!sel.rangeCount || !root.contains(sel.anchorNode) || sel.getRangeAt(0).collapsed) { toastMsg('请先选中要设置的文字'); return; }
+    kbColorTarget = kind;
+    kbColorSavedRange = sel.getRangeAt(0).cloneRange();
+    kbColorPending = kind === 'hilite' ? '#fff3a0' : '#d94848';
+    const el = kbColorPopEl(); if (!el) return;
+    const title = kind === 'hilite' ? '突出显示颜色' : '文字颜色';
+    const presets = KB_COLOR_PRESETS.map(function(c){ return '<button type="button" class="cp-swatch" data-c="'+c+'" style="background:'+c+'" title="'+c+'" onclick="kbEdPickColor(\''+c+'\')"></button>'; }).join('');
+    el.innerHTML =
+      '<div class="cp-title">'+title+'</div>' +
+      '<div class="cp-presets">'+presets+'</div>' +
+      '<div class="cp-row"><input type="color" id="kbColorNative" value="'+kbColorPending+'" oninput="kbEdPickColor(this.value)"><div class="cp-preview" id="kbColorPreview" style="background:'+kbColorPending+'"></div></div>' +
+      '<div class="cp-btns"><button type="button" class="btn" onclick="kbEdCancelColor()">取消</button><button type="button" class="btn btn-primary" onclick="kbEdConfirmColor()">确认</button></div>';
+    el.classList.add('active');
+    if (btn && btn.getBoundingClientRect) {
+      const r = btn.getBoundingClientRect();
+      el.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 262)) + 'px';
+      el.style.top = (r.bottom + 6) + 'px';
+    } else {
+      el.style.left = '50%'; el.style.top = '30%';
+    }
+  };
+  window.kbEdPickColor = function(c){
+    kbColorPending = c;
+    const pv = document.getElementById('kbColorPreview'); if (pv) pv.style.background = c;
+    const n = document.getElementById('kbColorNative'); if (n && n.value.toLowerCase() !== String(c).toLowerCase()) n.value = c;
+  };
+  window.kbEdCancelColor = function(){ kbCloseColorPop(); };
+  window.kbEdConfirmColor = function(){
+    if (!kbColorPending) { kbCloseColorPop(); return; }
+    const root = kbEdRoot();
+    if (root && kbColorSavedRange) {
+      const sel = window.getSelection();
+      sel.removeAllRanges(); sel.addRange(kbColorSavedRange);
+      const css = (kbColorTarget === 'hilite' ? 'background-color:' : 'color:') + kbColorPending;
+      kbEdApplyStyle(css);
+    }
+    kbCloseColorPop();
+  };
+  document.addEventListener('mousedown', function(e){
+    const el = kbColorPopEl();
+    if (el && el.classList.contains('active') && !el.contains(e.target)) kbCloseColorPop();
+  });
   window.kbEdAlign=function(cmd){ kbEdFocus(); document.execCommand('styleWithCSS',false,true); document.execCommand(cmd,false,null); };
   window.kbEdLineHeight=function(v){
     const root=kbEdRoot(); if(!root||!v) return; root.focus();
@@ -2476,8 +2642,8 @@ renderDoc();
             <option value="28px">28</option>
             <option value="32px">32</option>
           </select>
-          <input type="color" class="kb-ed-color" title="文字颜色" onchange="kbEdColor(this.value)">
-          <input type="color" class="kb-ed-color" title="突出显示" value="#fff3a0" onchange="kbEdHilite(this.value)">
+          <button type="button" class="btn btn-sm" title="文字颜色" onclick="kbEdOpenColor('color', this)"><span style="color:#d94848;font-weight:700">A</span></button>
+          <button type="button" class="btn btn-sm" title="突出显示" onclick="kbEdOpenColor('hilite', this)"><span style="background:#fff3a0;padding:0 4px;border-radius:3px">▮</span></button>
           <button type="button" class="btn btn-sm" onclick="kbEdExec('bold')" title="加粗"><b>B</b></button>
           <button type="button" class="btn btn-sm" onclick="kbEdExec('italic')" title="斜体"><i>I</i></button>
           <button type="button" class="btn btn-sm" onclick="kbEdExec('underline')" title="下划线"><u>U</u></button>
@@ -2500,6 +2666,7 @@ renderDoc();
           <button type="button" class="btn btn-sm" onclick="kbEdExec('removeFormat')" title="清除格式">清除格式</button>
           <button type="button" class="btn btn-sm" onclick="kbEdInsertImageClick()">插入图片</button>
           <button type="button" class="btn btn-sm" onclick="kbEdImportDocClick()">导入文档</button>
+          <button type="button" class="btn btn-sm" onclick="document.getElementById('importFiles').click()">导入文件</button>
           <span class="kb-ed-img-ops" id="kbEdImgOps" style="display:none;">
             <button type="button" class="btn btn-sm" onclick="kbEdSetImgWidth('30%')">小</button>
             <button type="button" class="btn btn-sm" onclick="kbEdSetImgWidth('50%')">中</button>
