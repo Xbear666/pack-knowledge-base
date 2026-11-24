@@ -305,6 +305,11 @@ html.dark .admin-tool-btn:hover { background: rgba(255,255,255,.055); }
 .f-group textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
 .f-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .modal-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+.modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+.modal-head h3 { margin-bottom: 0; }
+.modal-close-x { flex: 0 0 auto; width: 30px; height: 30px; border: 1px solid var(--divider); background: var(--bg); border-radius: 8px; font-size: 18px; line-height: 1; cursor: pointer; color: var(--t2); }
+.modal-close-x:hover { background: #f3f4f6; color: var(--t1); }
+.kb-ed-btn-active { outline: 2px solid var(--brand) !important; }
 
 .toast {
   position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
@@ -1474,7 +1479,7 @@ function insertAttachmentIntoEditor(input) {
   };
   reader.readAsDataURL(file);
 }
-function closeModal() { document.getElementById('modalMask').classList.remove('active'); document.getElementById('modalBox').classList.remove('modal-wide'); }
+function closeModal() { if(window.kbClearColorPending) window.kbClearColorPending(); document.getElementById('modalMask').classList.remove('active'); document.getElementById('modalBox').classList.remove('modal-wide'); }
 function kbInitSideResizers() {
   var root = document.documentElement;
   try {
@@ -1511,7 +1516,7 @@ function kbInitSideResizers() {
   bind('sideResizer', '--side-w', 'h5_kb_side_w', 200, 480);
   bind('adminSideResizer', '--admin-side-w', 'h5_kb_admin_side_w', 180, 420);
 }
-document.getElementById('modalMask').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+/* 点击遮罩空白不再关闭弹窗，避免误丢编辑内容；仅通过右上角 × / 取消 / 保存 按钮关闭 */
 
 // 初始化
 load();
@@ -2515,6 +2520,32 @@ kbInitSideResizers();
     if(!String(text||'').trim()){ toastMsg('未从文档提取到文字（可能是扫描件或特殊编码）'); input.value=''; return; }
     kbEdInsertHTML(kbTextToHtml(text)); toastMsg('已导入文档文字：'+file.name); input.value='';
   };
+  window.kbEdFilesPicked=async function(input){
+    const files=[...(input.files||[])]; if(!files.length) return;
+    const imgExts=['png','jpg','jpeg','gif','webp'];
+    const docExts=['docx','pdf','txt','md','csv','html','htm','xlsx','pptx'];
+    let ok=[], failed=[];
+    for(const f of files){
+      const ext=extension(f.name);
+      try{
+        if(imgExts.includes(ext)){
+          if(f.size>20*1024*1024){ failed.push(f.name+'（图片超过 20MB）'); continue; }
+          const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);r.readAsDataURL(f);});
+          kbEdInsertHTML('<p><img class="kb-ed-img" src="'+dataUrl+'" alt="'+kbEsc(f.name)+'" style="width:100%"></p>');
+          ok.push(f.name);
+        } else if(docExts.includes(ext)){
+          let text='';
+          try{ text=await extractText(f,ext); }catch(ex){ console.warn(ex); }
+          if(!String(text||'').trim()){ failed.push(f.name+'（未提取到文字）'); continue; }
+          kbEdInsertHTML(kbTextToHtml(text));
+          ok.push(f.name);
+        } else { failed.push(f.name+'（不支持的格式）'); }
+      }catch(ex){ failed.push(f.name+'（'+(ex.message||'读取失败')+'）'); }
+    }
+    if(ok.length) toastMsg('已插入 '+ok.length+' 个文件：'+ok.slice(0,3).join('、')+(ok.length>3?' 等':''));
+    if(failed.length) toastMsg('部分文件未插入：'+failed.slice(0,2).join('；'));
+    input.value='';
+  };
   window.kbEdSetImgWidth=function(w){
     if(!kbEdSelectedImg){ toastMsg('请先点击选中一张图片'); return; }
     kbEdSelectedImg.style.width=w;
@@ -2534,30 +2565,27 @@ kbInitSideResizers();
   window.kbEdFontSize=function(v){ if(v) kbEdApplyStyle('font-size:'+v); };
   window.kbEdColor=function(v){ if(v) kbEdApplyStyle('color:'+v); };
   window.kbEdHilite=function(v){ if(v) kbEdApplyStyle('background-color:'+v); };
-  let kbColorTarget = 'color';
-  let kbColorSavedRange = null;
-  let kbColorPending = null;
+  let kbColorPending = null;   // {kind, color, btn} 选色后待应用到后续选中的文字
   const KB_COLOR_PRESETS = ['#d94848','#b8860b','#2f855a','#2563eb','#6b7280','#111827','#ffffff','#fff3a0','#fdecea'];
   function kbColorPopEl(){ return document.getElementById('kbColorPop'); }
+  function kbColorResetBtn(){ if(kbColorPending && kbColorPending.btn){ kbColorPending.btn.classList.remove('kb-ed-btn-active'); } }
   function kbCloseColorPop(){
     const el = kbColorPopEl(); if (el) { el.classList.remove('active'); el.innerHTML = ''; }
-    kbColorSavedRange = null; kbColorPending = null;
   }
+  function kbClearColorPending(){ kbColorResetBtn(); kbColorPending = null; }
   window.kbEdOpenColor = function(kind, btn){
     const root = kbEdRoot(); if (!root) return;
-    const sel = window.getSelection();
-    if (!sel.rangeCount || !root.contains(sel.anchorNode) || sel.getRangeAt(0).collapsed) { toastMsg('请先选中要设置的文字'); return; }
-    kbColorTarget = kind;
-    kbColorSavedRange = sel.getRangeAt(0).cloneRange();
-    kbColorPending = kind === 'hilite' ? '#fff3a0' : '#d94848';
+    kbColorResetBtn();
+    kbColorPending = { kind: kind, color: kind === 'hilite' ? '#fff3a0' : '#d94848', btn: btn || null };
+    if(btn) btn.classList.add('kb-ed-btn-active');
     const el = kbColorPopEl(); if (!el) return;
-    const title = kind === 'hilite' ? '突出显示颜色' : '文字颜色';
+    const title = kind === 'hilite' ? '突出显示（选色后在正文选中文字生效）' : '文字颜色（选色后在正文选中文字生效）';
     const presets = KB_COLOR_PRESETS.map(function(c){ return '<button type="button" class="cp-swatch" data-c="'+c+'" style="background:'+c+'" title="'+c+'" onclick="kbEdPickColor(\''+c+'\')"></button>'; }).join('');
     el.innerHTML =
       '<div class="cp-title">'+title+'</div>' +
       '<div class="cp-presets">'+presets+'</div>' +
-      '<div class="cp-row"><input type="color" id="kbColorNative" value="'+kbColorPending+'" oninput="kbEdPickColor(this.value)"><div class="cp-preview" id="kbColorPreview" style="background:'+kbColorPending+'"></div></div>' +
-      '<div class="cp-btns"><button type="button" class="btn" onclick="kbEdCancelColor()">取消</button><button type="button" class="btn btn-primary" onclick="kbEdConfirmColor()">确认</button></div>';
+      '<div class="cp-row"><input type="color" id="kbColorNative" value="'+kbColorPending.color+'" oninput="kbEdPickColor(this.value)"><div class="cp-preview" id="kbColorPreview" style="background:'+kbColorPending.color+'"></div></div>' +
+      '<div class="cp-btns"><button type="button" class="btn" onclick="kbEdCancelColor()">取消</button><button type="button" class="btn btn-primary" onclick="kbEdDoneColor()">完成</button></div>';
     el.classList.add('active');
     if (btn && btn.getBoundingClientRect) {
       const r = btn.getBoundingClientRect();
@@ -2568,22 +2596,26 @@ kbInitSideResizers();
     }
   };
   window.kbEdPickColor = function(c){
-    kbColorPending = c;
+    if(!kbColorPending) return;
+    kbColorPending.color = c;
     const pv = document.getElementById('kbColorPreview'); if (pv) pv.style.background = c;
     const n = document.getElementById('kbColorNative'); if (n && n.value.toLowerCase() !== String(c).toLowerCase()) n.value = c;
   };
-  window.kbEdCancelColor = function(){ kbCloseColorPop(); };
-  window.kbEdConfirmColor = function(){
-    if (!kbColorPending) { kbCloseColorPop(); return; }
-    const root = kbEdRoot();
-    if (root && kbColorSavedRange) {
-      const sel = window.getSelection();
-      sel.removeAllRanges(); sel.addRange(kbColorSavedRange);
-      const css = (kbColorTarget === 'hilite' ? 'background-color:' : 'color:') + kbColorPending;
-      kbEdApplyStyle(css);
-    }
+  window.kbEdCancelColor = function(){ kbClearColorPending(); kbCloseColorPop(); };
+  window.kbEdDoneColor = function(){
     kbCloseColorPop();
+    if(kbColorPending) toastMsg('请在正文选中要'+(kbColorPending.kind==='hilite'?'高亮':'改色')+'的文字');
   };
+  window.kbEdMaybeApplyPending = function(){
+    if(!kbColorPending) return;
+    const root = kbEdRoot(); if(!root) return;
+    const sel = window.getSelection();
+    if(!sel.rangeCount || sel.getRangeAt(0).collapsed || !root.contains(sel.anchorNode)) return;
+    const css = (kbColorPending.kind === 'hilite' ? 'background-color:' : 'color:') + kbColorPending.color;
+    kbEdApplyStyle(css);
+    kbClearColorPending();
+  };
+  window.kbClearColorPending = kbClearColorPending;
   document.addEventListener('mousedown', function(e){
     const el = kbColorPopEl();
     if (el && el.classList.contains('active') && !el.contains(e.target)) kbCloseColorPop();
@@ -2612,7 +2644,7 @@ kbInitSideResizers();
     it.depth=[1,2,3].includes(Number(it.depth))?Number(it.depth):1; it.parentId=it.parentId?String(it.parentId):null;
     const parentOptions=(ch.items||[]).filter(x=>String(x.id)!==String(iid)).map(x=>{const d=[1,2,3].includes(Number(x.depth))?Number(x.depth):1;const lbl=['','一级','二级','三级'][d]+' · '+(x.title||'');return `<option value="${esc(x.id)}" ${String(it.parentId)===String(x.id)?'selected':''}>${esc(lbl)}</option>`;}).join('');
     document.getElementById('modalBox').innerHTML=`
-      <h3>${isNew?'新增条目':'编辑条目'}</h3>
+      <div class="modal-head"><h3>${isNew?'新增条目':'编辑条目'}</h3><button type="button" class="modal-close-x" title="关闭" onclick="closeModal()">×</button></div>
       <div class="f-group"><label>条目标题</label><input type="text" id="fItTitle" value="${esc(it.title)}" placeholder="条目标题"></div>
       <div class="f-row"><div class="f-group"><label>条目层级</label><select id="fItDepth">
           <option value="1" ${it.depth===1?'selected':''}>一级条目</option>
@@ -2666,7 +2698,7 @@ kbInitSideResizers();
           <button type="button" class="btn btn-sm" onclick="kbEdExec('removeFormat')" title="清除格式">清除格式</button>
           <button type="button" class="btn btn-sm" onclick="kbEdInsertImageClick()">插入图片</button>
           <button type="button" class="btn btn-sm" onclick="kbEdImportDocClick()">导入文档</button>
-          <button type="button" class="btn btn-sm" onclick="document.getElementById('importFiles').click()">导入文件</button>
+          <button type="button" class="btn btn-sm" onclick="document.getElementById('fItFiles').click()">导入文件</button>
           <span class="kb-ed-img-ops" id="kbEdImgOps" style="display:none;">
             <button type="button" class="btn btn-sm" onclick="kbEdSetImgWidth('30%')">小</button>
             <button type="button" class="btn btn-sm" onclick="kbEdSetImgWidth('50%')">中</button>
@@ -2678,6 +2710,7 @@ kbInitSideResizers();
         <div class="kb-filter-hint">可直接粘贴文字或截图；点击插入的图片后，用上方「小 / 中 / 大 / 全屏」调整比例。支持导入 docx、pdf、txt、md、xlsx、pptx 解析为文字。</div>
         <input type="file" id="fItImgFile" accept=".png,.jpg,.jpeg,.gif,.webp" style="display:none" onchange="kbEdImgPicked(this)">
         <input type="file" id="fItDocFile" accept=".docx,.pdf,.txt,.md,.csv,.html,.htm,.xlsx,.pptx" style="display:none" onchange="kbEdDocPicked(this)">
+        <input type="file" id="fItFiles" multiple accept=".pdf,.docx,.doc,.png,.jpg,.jpeg,.gif,.webp,.xlsx,.xls,.pptx,.txt,.md,.csv,.html,.htm" style="display:none" onchange="kbEdFilesPicked(this)">
       </div>
       <div class="f-row"><div class="f-group"><label>标签（逗号分隔）</label><input type="text" id="fItTags" value="${esc((it.tags||[]).join(', '))}" placeholder="安全, 流程"></div>
       <div class="f-group"><label>重要程度</label><select id="fItLevel">${window.kbLevelList().map(x=>`<option value="${kbEsc(x.key)}" ${it.level===x.key?'selected':''}>${kbEsc(window.kbLevelConfig(x.key).name)}</option>`).join('')}</select></div></div>
@@ -2687,6 +2720,7 @@ kbInitSideResizers();
     document.getElementById('modalMask').classList.add('active');
     const edRoot = document.getElementById('fItContent');
     if (edRoot) {
+      edRoot.addEventListener('mouseup', () => { setTimeout(() => { if(window.kbEdMaybeApplyPending) window.kbEdMaybeApplyPending(); }, 0); });
       edRoot.addEventListener('click', ev => {
         const img = ev.target.closest('img');
         if (kbEdSelectedImg) kbEdSelectedImg.classList.remove('kb-ed-sel');
